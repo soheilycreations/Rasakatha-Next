@@ -39,3 +39,13 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# customer order data (contains real PII — never commit)
+/src/lib/data/orders.json
+
+# legacy site backup + exports (contain customer PII / huge)
+/old site/
+/Last_100_Orders.xlsx
+/Website design updates/
+/Rasakatha Publishers Bookstore UI/
+/sliders/

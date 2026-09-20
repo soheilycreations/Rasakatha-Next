@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    "Website design updates/**",
+    "Rasakatha Publishers Bookstore UI/**",
+    "old site/**",
   ]),
 ]);
 

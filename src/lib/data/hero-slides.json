@@ -1,0 +1,33 @@
+[
+  {
+    "id": "38449",
+    "title": "මැයි වැහි — May Rain",
+    "cover": "/hero/slide-may-rain-full.png",
+    "author": "Navodya Wijerathna",
+    "price": 1200
+  },
+  {
+    "id": "38292",
+    "title": "Nostalgia — නොස්ටැල්ජියා",
+    "cover": "/hero/slide-nostalgia-full.png",
+    "author": "Kavindya Hettiarachchi",
+    "price": 920
+  },
+  {
+    "id": "dunhida",
+    "title": "දුන්හිඳ පහැඳුවා",
+    "cover": "/hero/slide-dunhida-full.png"
+  },
+  {
+    "id": "kaala",
+    "title": "කාල",
+    "cover": "/hero/slide-kaala-full.png"
+  },
+  {
+    "id": "37774",
+    "title": "It's You, No It's Me",
+    "cover": "/hero/slide-itsyou-full.png",
+    "author": "Isuru Matheesha Fernando",
+    "price": 880
+  }
+]

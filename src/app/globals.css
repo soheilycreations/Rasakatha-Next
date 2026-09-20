@@ -1,52 +1,148 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #0b0c10;
-  --bg-elevated: #121319;
-  --bg-card: #16171f;
-  --border: #23242e;
-  --ink: #f4f2ea;
-  --ink-dim: #a3a3af;
-  --ink-faint: #6b6c78;
-  --accent: #e8a838;
-  --accent-soft: #3a3122;
-  --accent-ink: #14110a;
-  --plum: #7c5cff;
-  --teal: #2fbfa0;
-  --rose: #ef6f6c;
+  --bg: #0a0b0f;
+  --panel: #12141a;
+  --sidebar: #0e1015;
+  --card: #1a1d24;
+  --card-2: #15181f;
+  --ink: #f5f5f7;
+  --ink-dim: #9ea0ab;
+  --ink-faint: #8b8d98;
+  --accent: #ef4238;
+  --accent-blue: #00aef0;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --surface-tint: rgba(255, 255, 255, 0.045);
+  --surface-tint-strong: rgba(255, 255, 255, 0.08);
+  --scrollbar-thumb: #2a2e38;
+  --ease-premium: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --app-backdrop:
+    radial-gradient(120% 90% at 12% 0%, #ef4238 0%, rgba(239, 66, 56, 0) 55%),
+    radial-gradient(90% 80% at 92% 8%, rgba(0, 174, 240, 0.55) 0%, rgba(0, 174, 240, 0) 55%),
+    radial-gradient(120% 110% at 80% 100%, #faf7f2 0%, rgba(250, 247, 242, 0) 45%),
+    linear-gradient(150deg, #6d1a17 0%, #2a0f10 45%, #12131a 100%);
+}
+
+[data-theme="light"] {
+  --bg: #f6f5f3;
+  --panel: #ffffff;
+  --sidebar: #faf9f7;
+  --card: #ffffff;
+  --card-2: #f2f1ee;
+  --ink: #18181b;
+  --ink-dim: #55575e;
+  --ink-faint: #7a7c84;
+  --border: rgba(0, 0, 0, 0.09);
+  --border-strong: rgba(0, 0, 0, 0.16);
+  --surface-tint: rgba(0, 0, 0, 0.035);
+  --surface-tint-strong: rgba(0, 0, 0, 0.06);
+  --scrollbar-thumb: #d8d6d2;
+  --app-backdrop:
+    radial-gradient(120% 90% at 12% 0%, rgba(239, 66, 56, 0.16) 0%, rgba(239, 66, 56, 0) 55%),
+    radial-gradient(90% 80% at 92% 8%, rgba(0, 174, 240, 0.18) 0%, rgba(0, 174, 240, 0) 55%),
+    #f0eee9;
 }
 
 @theme inline {
   --color-bg: var(--bg);
-  --color-bg-elevated: var(--bg-elevated);
-  --color-bg-card: var(--bg-card);
-  --color-border: var(--border);
+  --color-panel: var(--panel);
+  --color-sidebar: var(--sidebar);
+  --color-card: var(--card);
+  --color-card-2: var(--card-2);
   --color-ink: var(--ink);
   --color-ink-dim: var(--ink-dim);
   --color-ink-faint: var(--ink-faint);
   --color-accent: var(--accent);
-  --color-accent-soft: var(--accent-soft);
-  --color-accent-ink: var(--accent-ink);
-  --color-plum: var(--plum);
-  --color-teal: var(--teal);
-  --color-rose: var(--rose);
+  --color-accent-blue: var(--accent-blue);
   --font-sans: var(--font-sans);
   --font-display: var(--font-display);
+  --font-mono: var(--font-mono);
+}
+
+html,
+body {
+  height: 100%;
 }
 
 body {
   background: var(--bg);
   color: var(--ink);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  position: relative;
+}
+
+/* Smooth, unified crossfade for the dark/light switch, plus a smooth default
+   for transform/opacity so every hover/press animation on the site shares the
+   same premium easing unless a component sets its own transition-* utility
+   (a class always beats this universal rule, so custom timing still works). */
+*,
+*::before,
+*::after {
+  transition: background-color 0.35s ease, border-color 0.35s ease, color 0.35s ease,
+    fill 0.35s ease, stroke 0.35s ease, box-shadow 0.35s ease,
+    transform 0.35s var(--ease-premium), opacity 0.3s ease;
+}
+
+.app-backdrop {
+  background: var(--app-backdrop);
+}
+
+.grain-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  opacity: 0.03;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+[data-theme="light"] .grain-overlay {
+  opacity: 0.015;
+}
+
+.diagonal-tint::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    125deg,
+    rgba(255, 255, 255, 0.12) 0 5px,
+    rgba(255, 255, 255, 0) 5px 13px
+  );
+}
+
+.btn-accent {
+  position: relative;
+  background: linear-gradient(180deg, #f4574c 0%, var(--accent) 100%);
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.25) inset,
+    0 -6px 14px 0 rgba(0, 0, 0, 0.2) inset,
+    0 14px 30px -10px rgba(239, 66, 56, 0.6);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn-accent:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.3) inset,
+    0 -6px 14px 0 rgba(0, 0, 0, 0.2) inset,
+    0 18px 36px -8px rgba(239, 66, 56, 0.7);
+}
+
+.btn-accent:active {
+  transform: translateY(0) scale(0.98);
 }
 
 ::selection {
   background: var(--accent);
-  color: var(--accent-ink);
+  color: #ffffff;
 }
 
 * {
-  scrollbar-color: #35363f transparent;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
   scrollbar-width: thin;
 }
 
@@ -55,18 +151,175 @@ body {
   height: 8px;
 }
 ::-webkit-scrollbar-thumb {
-  background: #2a2b34;
+  background: var(--scrollbar-thumb);
   border-radius: 999px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 
-@keyframes slide-in {
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+@keyframes slide-progress {
   from {
-    transform: translateX(-100%);
+    width: 0%;
   }
   to {
-    transform: translateX(0);
+    width: 100%;
   }
+}
+
+.tile-hover {
+  transition: transform 0.35s var(--ease-premium), box-shadow 0.35s ease;
+}
+.tile-hover:hover {
+  transform: translateY(-4px);
+}
+
+@keyframes ken-burns {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.08);
+  }
+}
+
+@keyframes popover-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.popover-in {
+  animation: popover-in 0.22s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+@keyframes cart-bump {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.28);
+  }
+  60% {
+    transform: scale(0.92);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.cart-bump {
+  animation: cart-bump 420ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes check-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.4) rotate(-15deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.15) rotate(4deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes check-ring {
+  0% {
+    opacity: 0.55;
+    transform: scale(0.6);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.9);
+  }
+}
+
+@keyframes fade-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes check-draw {
+  from {
+    stroke-dashoffset: 24;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.thankyou-badge {
+  position: relative;
+  animation: check-pop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.thankyou-badge::before,
+.thankyou-badge::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 2px solid var(--accent, #ef4238);
+  animation: check-ring 1s cubic-bezier(0.16, 1, 0.3, 1) 0.35s both;
+}
+
+.thankyou-badge::after {
+  animation-delay: 0.6s;
+}
+
+.thankyou-badge svg path {
+  stroke-dasharray: 24;
+  stroke-dashoffset: 24;
+  animation: check-draw 0.4s ease-out 0.45s forwards;
+}
+
+.fade-rise {
+  opacity: 0;
+  animation: fade-rise 0.5s var(--ease-premium, ease) both;
+}
+
+/* A geometric clip-path clips far more reliably than overflow-hidden while
+   an ancestor is mid CSS-transform (overflow-hidden's rounded corners can
+   render square with a hard seam on some GPUs during a scale animation). */
+.round-clip {
+  clip-path: inset(0 round 12px);
+  -webkit-clip-path: inset(0 round 12px);
+}
+
+/* Swap logo art per theme with pure CSS (no JS/hydration flicker) — same
+   mechanism as the data-theme attribute set pre-hydration in layout.tsx. */
+.logo-dark {
+  display: block;
+}
+.logo-light {
+  display: none;
+}
+[data-theme="light"] .logo-dark {
+  display: none;
+}
+[data-theme="light"] .logo-light {
+  display: block;
 }
