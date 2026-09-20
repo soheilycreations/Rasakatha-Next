@@ -5,6 +5,7 @@ import type { CartItem } from "@/lib/cart";
 import { money, tintForId } from "@/lib/format";
 import { SRI_LANKA_LOCATIONS, calculateShippingFee } from "@/lib/shipping";
 import type { Customer } from "@/lib/orders";
+import type { Account } from "@/lib/account";
 import BookCover from "./BookCover";
 import { IconTruck, IconHeart } from "./icons";
 
@@ -71,17 +72,19 @@ function LocationSelect({
 }
 
 export default function CheckoutPage({
+  account,
   items,
   onPlaceOrder,
   onBack,
 }: {
+  account: Account | null;
   items: CartItem[];
   onPlaceOrder: (payment: string, deliveryFee: number, customer: Customer) => void;
   onBack: () => void;
 }) {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
+  const [name, setName] = useState(account?.name ?? "");
+  const [email, setEmail] = useState(account?.email ?? "");
+  const [phone, setPhone] = useState(account?.phone ?? "");
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
   const [isGift, setIsGift] = useState(false);

@@ -15,6 +15,9 @@ import CartPage from "./CartPage";
 import CheckoutPage from "./CheckoutPage";
 import ThankYouPage from "./ThankYouPage";
 import TrackOrderView from "./TrackOrderView";
+import ProfileView from "./ProfileView";
+import AuthModal from "./AuthModal";
+import type { Account } from "@/lib/account";
 import FlyToCartLayer from "./FlyToCartLayer";
 import type { Customer, StoredOrder } from "@/lib/orders";
 import type { HeroSlide } from "@/lib/hero-slides";
@@ -34,6 +37,8 @@ export default function StoreApp({ slides }: { slides: HeroSlide[] }) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
+  const [account, setAccount] = useState<Account | null>(null);
+  const [authOpen, setAuthOpen] = useState(false);
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -66,6 +71,24 @@ export default function StoreApp({ slides }: { slides: HeroSlide[] }) {
       // storage unavailable (private mode, quota) — cart just won't persist
     }
   }, [cart, hydrated]);
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((a: Account | null) => setAccount(a))
+      .catch(() => {});
+  }, []);
+
+  const handleSignOut = async () => {
+    await fetch("/api/auth/logout", { method: "POST" });
+    setAccount(null);
+    setNav("Home");
+  };
+
+  const openProfile = () => {
+    if (account) setNav("Profile");
+    else setAuthOpen(true);
+  };
 
   const toggleWish = (key: string) => setWish((w) => ({ ...w, [key]: !w[key] }));
 
@@ -139,6 +162,16 @@ export default function StoreApp({ slides }: { slides: HeroSlide[] }) {
   return (
     <div className="app-backdrop flex min-h-screen justify-center p-0">
       <FlyToCartLayer />
+      {authOpen && (
+        <AuthModal
+          onClose={() => setAuthOpen(false)}
+          onAuthed={(a) => {
+            setAccount(a);
+            setAuthOpen(false);
+            setNav("Profile");
+          }}
+        />
+      )}
       <div className="flex h-screen w-full min-h-[660px] overflow-hidden bg-panel">
         <Sidebar
           nav={nav}
@@ -185,6 +218,8 @@ export default function StoreApp({ slides }: { slides: HeroSlide[] }) {
               setNav("My Library");
             }}
             onMenuClick={() => setMobileNavOpen(true)}
+            account={account}
+            onProfileClick={openProfile}
           />
 
           <div className="flex-1 overflow-y-auto pb-4">
@@ -249,11 +284,15 @@ export default function StoreApp({ slides }: { slides: HeroSlide[] }) {
               </div>
             ) : nav === "Checkout" ? (
               <div className="px-6 pt-4 sm:px-8">
-                <CheckoutPage items={cart} onPlaceOrder={handlePlaceOrder} onBack={goToCart} />
+                <CheckoutPage account={account} items={cart} onPlaceOrder={handlePlaceOrder} onBack={goToCart} />
               </div>
             ) : nav === "ThankYou" && placedOrder ? (
               <div className="px-6 pt-4 sm:px-8">
                 <ThankYouPage order={placedOrder} onContinueShopping={() => setNav("Home")} onTrackOrder={() => setNav("Track")} />
+              </div>
+            ) : nav === "Profile" && account ? (
+              <div className="px-6 pt-4 sm:px-8">
+                <ProfileView account={account} onUpdated={setAccount} onSignOut={handleSignOut} />
               </div>
             ) : nav === "Track" ? (
               <div className="px-6 pt-4 sm:px-8">

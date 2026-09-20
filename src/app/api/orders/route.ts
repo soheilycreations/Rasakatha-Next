@@ -24,7 +24,8 @@ export async function POST(request: Request) {
         total,
         payment,
         status: "processing",
-        customer,
+        // Lower-cased so a signed-in customer's "My orders" lookup matches exactly.
+        customer: { ...customer, email: String(customer.email ?? "").trim().toLowerCase() },
       })
       .select()
       .single();

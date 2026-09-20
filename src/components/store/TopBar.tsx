@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { CartItem } from "@/lib/cart";
+import type { Account } from "@/lib/account";
 import { IconSearch, IconFilter, IconCart, IconHeart } from "./icons";
 import ThemeToggle from "./ThemeToggle";
 import CartPopover from "./CartPopover";
@@ -17,6 +18,8 @@ export default function TopBar({
   wishCount,
   onOpenLibrary,
   onMenuClick,
+  account,
+  onProfileClick,
 }: {
   query: string;
   onQueryChange: (v: string) => void;
@@ -28,6 +31,8 @@ export default function TopBar({
   wishCount: number;
   onOpenLibrary: () => void;
   onMenuClick: () => void;
+  account: Account | null;
+  onProfileClick: () => void;
 }) {
   const [cartOpen, setCartOpen] = useState(false);
   const cartRef = useRef<HTMLDivElement>(null);
@@ -109,15 +114,21 @@ export default function TopBar({
           />
         )}
       </div>
-      <div className="hidden shrink-0 cursor-pointer items-center gap-[11px] rounded-2xl border border-[var(--border)] bg-[var(--surface-tint)] py-1.5 pl-[7px] pr-4 transition-colors hover:border-[var(--border-strong)] sm:flex">
+      <button
+        onClick={onProfileClick}
+        className="flex shrink-0 cursor-pointer items-center gap-[11px] rounded-2xl border border-[var(--border)] bg-[var(--surface-tint)] py-1.5 pl-[7px] pr-2 text-left transition-colors hover:border-[var(--border-strong)] sm:pr-4"
+        aria-label={account ? "View profile" : "Sign in"}
+      >
         <div className="grid h-8 w-8 place-items-center rounded-full bg-accent text-[12.5px] font-bold text-white">
-          NP
+          {account ? (account.name || account.email).slice(0, 2).toUpperCase() : "?"}
         </div>
-        <div>
-          <div className="text-sm font-semibold leading-tight text-[var(--ink)]">Nimali P.</div>
-          <div className="text-xs text-accent-blue">View profile</div>
+        <div className="hidden sm:block">
+          <div className="max-w-[110px] truncate text-sm font-semibold leading-tight text-[var(--ink)]">
+            {account ? account.name || "My account" : "Guest"}
+          </div>
+          <div className="text-xs text-accent-blue">{account ? "View profile" : "Sign in"}</div>
         </div>
-      </div>
+      </button>
     </header>
   );
 }
