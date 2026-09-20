@@ -33,8 +33,35 @@ async function ensureBucket() {
   if (error && !/already exists/i.test(error.message)) throw error;
 }
 
+async function existingCovers() {
+  const names = new Set();
+  for (let offset = 0; ; offset += 1000) {
+    const { data, error } = await sb.storage.from(BUCKET).list("", { limit: 1000, offset });
+    if (error) throw error;
+    data.forEach((f) => names.add(f.name));
+    if (data.length < 1000) break;
+  }
+  return names;
+}
+
+async function uploadWithRetry(file, body) {
+  let error;
+  for (let attempt = 1; attempt <= 4; attempt++) {
+    ({ error } = await sb.storage.from(BUCKET).upload(file, body, {
+      upsert: true,
+      contentType: MIME[path.extname(file).toLowerCase()] ?? "application/octet-stream",
+      cacheControl: "31536000",
+    }));
+    if (!error) return null;
+    await new Promise((r) => setTimeout(r, attempt * 1500));
+  }
+  return error;
+}
+
 async function uploadCovers() {
-  const files = fs.readdirSync(coversDir);
+  const already = await existingCovers();
+  const files = fs.readdirSync(coversDir).filter((f) => !already.has(f));
+  console.log(`Covers to upload: ${files.length} (${already.size} already in bucket)`);
   let done = 0;
   let failed = 0;
   const queue = [...files];
@@ -42,11 +69,7 @@ async function uploadCovers() {
     while (queue.length) {
       const file = queue.shift();
       const body = fs.readFileSync(path.join(coversDir, file));
-      const { error } = await sb.storage.from(BUCKET).upload(file, body, {
-        upsert: true,
-        contentType: MIME[path.extname(file).toLowerCase()] ?? "application/octet-stream",
-        cacheControl: "31536000",
-      });
+      const error = await uploadWithRetry(file, body);
       if (error) {
         failed++;
         console.error(`  upload failed: ${file}: ${error.message}`);
@@ -55,8 +78,8 @@ async function uploadCovers() {
     }
   };
   await Promise.all(Array.from({ length: 8 }, worker));
-  console.log(`Covers uploaded: ${done - failed}/${files.length}`);
-  if (failed) throw new Error(`${failed} cover uploads failed; re-run to retry`);
+  console.log(`Covers uploaded this run: ${done - failed}/${files.length}`);
+  if (failed) console.warn(`${failed} cover uploads failed; re-run the script to retry them.`);
 }
 
 async function upsertChunks(table, rows, onConflict) {
