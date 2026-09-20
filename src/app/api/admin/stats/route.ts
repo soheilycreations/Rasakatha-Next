@@ -1,14 +1,17 @@
 import { NextResponse } from "next/server";
-import { readJson } from "@/lib/server/jsonStore";
-import type { StoredOrder } from "@/lib/orders";
-import { CATALOG } from "@/lib/catalog";
+import { supabase } from "@/lib/server/supabase";
+import { rowToOrder, type OrderRow } from "@/lib/server/ordersDb";
+import { getCatalog } from "@/lib/catalog";
 
 function dateKey(iso: string) {
   return iso.slice(0, 10);
 }
 
 export async function GET() {
-  const orders = readJson<StoredOrder[]>("orders.json", []);
+  const { data, error } = await supabase().from("orders").select("*");
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  const orders = (data as OrderRow[]).map(rowToOrder);
+  const CATALOG = await getCatalog();
 
   const totalRevenue = orders.reduce((sum, o) => sum + o.total, 0);
   const totalOrders = orders.length;

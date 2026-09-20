@@ -1,5 +1,9 @@
 import StoreApp from "@/components/store/StoreApp";
+import { getHeroSlides } from "@/lib/server/heroSlides";
 
-export default function Home() {
-  return <StoreApp />;
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  const slides = await getHeroSlides();
+  return <StoreApp slides={slides} />;
 }

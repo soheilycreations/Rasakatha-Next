@@ -1,5 +1,6 @@
 import type { CatalogBook } from "@/lib/catalog";
 import type { CartItem } from "@/lib/cart";
+import type { HeroSlide } from "@/lib/hero-slides";
 import HeroCarousel from "./HeroCarousel";
 import CategoryTiles from "./CategoryTiles";
 import HomeRow from "./HomeRow";
@@ -7,6 +8,7 @@ import AboutBanner from "./AboutBanner";
 import Footer from "./Footer";
 
 export default function HomeView({
+  slides,
   wish,
   onToggleWish,
   onAdd,
@@ -15,6 +17,7 @@ export default function HomeView({
   onSelectCategory,
   onTrackOrder,
 }: {
+  slides: HeroSlide[];
   wish: Record<string, boolean>;
   onToggleWish: (id: string) => void;
   onAdd: (book: CatalogBook) => void;
@@ -25,7 +28,9 @@ export default function HomeView({
 }) {
   return (
     <div className="pt-4">
-      <HeroCarousel wish={wish} onToggleWish={onToggleWish} onBuy={onBuyHero} />
+      {slides.length > 0 && (
+        <HeroCarousel slides={slides} wish={wish} onToggleWish={onToggleWish} onBuy={onBuyHero} />
+      )}
 
       <CategoryTiles onSelect={onSelectCategory} />
 

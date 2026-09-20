@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
-import { readJson } from "@/lib/server/jsonStore";
-import type { StoredOrder } from "@/lib/orders";
+import { supabase } from "@/lib/server/supabase";
+import { rowToOrder, type OrderRow } from "@/lib/server/ordersDb";
+
+const normalize = (p: string) => p.replace(/\D/g, "").replace(/^94/, "0");
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -10,16 +12,15 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Order ID and phone number are required" }, { status: 400 });
   }
 
-  const normalize = (p: string) => p.replace(/\D/g, "").replace(/^94/, "0");
+  const { data } = await supabase().from("orders").select("*").eq("id", id).maybeSingle();
+  const order = data ? rowToOrder(data as OrderRow) : null;
   const target = normalize(phone);
+  const matches =
+    order &&
+    (normalize(order.customer.phone) === target ||
+      (order.customer.giftPhone && normalize(order.customer.giftPhone) === target));
 
-  const orders = readJson<StoredOrder[]>("orders.json", []);
-  const order = orders.find(
-    (o) =>
-      o.id === id &&
-      (normalize(o.customer.phone) === target || (o.customer.giftPhone && normalize(o.customer.giftPhone) === target))
-  );
-  if (!order) {
+  if (!order || !matches) {
     return NextResponse.json({ error: "No order found with that ID and phone number" }, { status: 404 });
   }
   return NextResponse.json(order);

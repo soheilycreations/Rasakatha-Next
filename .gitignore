@@ -49,3 +49,6 @@ next-env.d.ts
 /Website design updates/
 /Rasakatha Publishers Bookstore UI/
 /sliders/
+
+# uploaded to Supabase Storage instead (562MB)
+/public/covers/

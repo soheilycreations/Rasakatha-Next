@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
-import { readJson, withFileLock, writeJson } from "@/lib/server/jsonStore";
-import type { StoredOrder } from "@/lib/orders";
+import { supabase } from "@/lib/server/supabase";
+import { rowToOrder, type OrderRow } from "@/lib/server/ordersDb";
+
+const MAX_ID_ATTEMPTS = 5;
 
 export async function POST(request: Request) {
   const body = await request.json();
@@ -10,23 +12,28 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid order payload" }, { status: 400 });
   }
 
-  const order: StoredOrder = {
-    id: Math.floor(10000 + Math.random() * 90000).toString(),
-    createdAt: new Date().toISOString(),
-    items,
-    subtotal,
-    deliveryFee,
-    total,
-    payment,
-    status: "processing",
-    customer,
-  };
+  for (let attempt = 0; attempt < MAX_ID_ATTEMPTS; attempt++) {
+    const id = Math.floor(10000 + Math.random() * 90000).toString();
+    const { data, error } = await supabase()
+      .from("orders")
+      .insert({
+        id,
+        items,
+        subtotal,
+        delivery_fee: deliveryFee,
+        total,
+        payment,
+        status: "processing",
+        customer,
+      })
+      .select()
+      .single();
 
-  await withFileLock("orders.json", () => {
-    const orders = readJson<StoredOrder[]>("orders.json", []);
-    orders.unshift(order);
-    writeJson("orders.json", orders);
-  });
-
-  return NextResponse.json(order);
+    if (!error) return NextResponse.json(rowToOrder(data as OrderRow));
+    // 23505 = unique violation: the random id collided, so try another one.
+    if (error.code !== "23505") {
+      return NextResponse.json({ error: "Could not place order" }, { status: 500 });
+    }
+  }
+  return NextResponse.json({ error: "Could not place order" }, { status: 500 });
 }

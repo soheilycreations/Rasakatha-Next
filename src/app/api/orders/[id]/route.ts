@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
-import { readJson } from "@/lib/server/jsonStore";
-import type { StoredOrder } from "@/lib/orders";
+import { supabase } from "@/lib/server/supabase";
+import { rowToOrder, type OrderRow } from "@/lib/server/ordersDb";
 
 export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
-  const orders = readJson<StoredOrder[]>("orders.json", []);
-  const order = orders.find((o) => o.id === id);
-  if (!order) return NextResponse.json({ error: "Order not found" }, { status: 404 });
-  return NextResponse.json(order);
+  const { data } = await supabase().from("orders").select("*").eq("id", id).maybeSingle();
+  if (!data) return NextResponse.json({ error: "Order not found" }, { status: 404 });
+  return NextResponse.json(rowToOrder(data as OrderRow));
 }

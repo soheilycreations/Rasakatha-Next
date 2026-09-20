@@ -17,11 +17,12 @@ import ThankYouPage from "./ThankYouPage";
 import TrackOrderView from "./TrackOrderView";
 import FlyToCartLayer from "./FlyToCartLayer";
 import type { Customer, StoredOrder } from "@/lib/orders";
+import type { HeroSlide } from "@/lib/hero-slides";
 
 const WISH_STORAGE_KEY = "rasakatha:wishlist";
 const CART_STORAGE_KEY = "rasakatha:cart";
 
-export default function StoreApp() {
+export default function StoreApp({ slides }: { slides: HeroSlide[] }) {
   const [nav, setNav] = useState("Home");
   const [pendingCategory, setPendingCategory] = useState<string | undefined>(undefined);
   const [pendingAuthor, setPendingAuthor] = useState<string | undefined>(undefined);
@@ -260,6 +261,7 @@ export default function StoreApp() {
               </div>
             ) : (
               <HomeView
+                slides={slides}
                 wish={wish}
                 onToggleWish={toggleWish}
                 onAdd={addBookToCart}

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { HERO_SLIDES } from "@/lib/hero-slides";
+import type { HeroSlide } from "@/lib/hero-slides";
 import type { CartItem } from "@/lib/cart";
 import { triggerFlyToCart } from "@/lib/fly-to-cart";
 import { IconCart, IconHeart } from "./icons";
@@ -22,10 +22,12 @@ function circularOffset(i: number, active: number, n: number) {
 }
 
 export default function HeroCarousel({
+  slides,
   wish,
   onToggleWish,
   onBuy,
 }: {
+  slides: HeroSlide[];
   wish: Record<string, boolean>;
   onToggleWish: (key: string) => void;
   onBuy: (item: Omit<CartItem, "qty">) => void;
@@ -36,7 +38,7 @@ export default function HeroCarousel({
   const dragState = useRef<{ startX: number } | null>(null);
   const justDragged = useRef(false);
 
-  const n = HERO_SLIDES.length;
+  const n = slides.length;
   const goTo = (i: number) => setActive(((i % n) + n) % n);
   const goNext = () => goTo(active + 1);
   const goPrev = () => goTo(active - 1);
@@ -90,7 +92,7 @@ export default function HeroCarousel({
       className="relative mx-6 mb-10 touch-pan-y select-none overflow-hidden rounded-[10px] sm:mx-8"
       style={{ height: slideH, perspective: 1600 }}
     >
-      {HERO_SLIDES.map((s, i) => {
+      {slides.map((s, i) => {
         const offset = circularOffset(i, active, n);
         const isActive = offset === 0;
         const hidden = Math.abs(offset) > 1;
@@ -143,22 +145,22 @@ export default function HeroCarousel({
         <button
           onClick={(e) => {
             e.stopPropagation();
-            onToggleWish(HERO_SLIDES[active].id);
+            onToggleWish(slides[active].id);
           }}
           className="pointer-events-auto absolute right-4 top-4 grid h-10 w-10 place-items-center rounded-full bg-black/40 backdrop-blur-sm transition-colors hover:bg-black/60 sm:right-6 sm:top-6 sm:h-[46px] sm:w-[46px]"
-          style={{ color: wish[HERO_SLIDES[active].id] ? "#EF4238" : "rgba(255,255,255,0.85)" }}
+          style={{ color: wish[slides[active].id] ? "#EF4238" : "rgba(255,255,255,0.85)" }}
           aria-label="Toggle wishlist"
         >
           <IconHeart
             className="h-[18px] w-[18px] sm:h-5 sm:w-5"
-            style={{ fill: wish[HERO_SLIDES[active].id] ? "currentColor" : "none" }}
+            style={{ fill: wish[slides[active].id] ? "currentColor" : "none" }}
           />
         </button>
 
         <button
           onClick={(e) => {
             e.stopPropagation();
-            const s = HERO_SLIDES[active];
+            const s = slides[active];
             triggerFlyToCart({ rect: e.currentTarget.getBoundingClientRect(), imgSrc: s.cover });
             onBuy({ id: s.id, title: s.title, author: s.author, cover: s.cover, price: s.price });
           }}
@@ -173,7 +175,7 @@ export default function HeroCarousel({
       <div className="pointer-events-none absolute inset-y-0 right-0 z-20 w-16 bg-gradient-to-l from-panel via-panel/70 to-transparent sm:w-24" />
 
       <div className="absolute bottom-5 left-1/2 z-30 flex -translate-x-1/2 gap-2">
-        {HERO_SLIDES.map((s, i) => (
+        {slides.map((s, i) => (
           <button
             key={s.id}
             onClick={() => goTo(i)}

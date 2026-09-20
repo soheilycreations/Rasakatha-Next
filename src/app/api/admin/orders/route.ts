@@ -1,24 +1,30 @@
 import { NextResponse } from "next/server";
-import { readJson, withFileLock, writeJson } from "@/lib/server/jsonStore";
-import type { OrderStatus, StoredOrder } from "@/lib/orders";
+import { supabase } from "@/lib/server/supabase";
+import { rowToOrder, type OrderRow } from "@/lib/server/ordersDb";
+import { ORDER_STATUS_STEPS, type OrderStatus } from "@/lib/orders";
 
 export async function GET() {
-  const orders = readJson<StoredOrder[]>("orders.json", []);
-  return NextResponse.json(orders);
+  const { data, error } = await supabase()
+    .from("orders")
+    .select("*")
+    .order("created_at", { ascending: false });
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json((data as OrderRow[]).map(rowToOrder));
 }
 
 export async function PATCH(request: Request) {
   const { id, status } = (await request.json()) as { id: string; status: OrderStatus };
+  if (!ORDER_STATUS_STEPS.some((s) => s.key === status)) {
+    return NextResponse.json({ error: "Invalid status" }, { status: 400 });
+  }
 
-  const result = await withFileLock("orders.json", () => {
-    const orders = readJson<StoredOrder[]>("orders.json", []);
-    const idx = orders.findIndex((o) => o.id === id);
-    if (idx === -1) return null;
-    orders[idx] = { ...orders[idx], status };
-    writeJson("orders.json", orders);
-    return orders[idx];
-  });
-
-  if (!result) return NextResponse.json({ error: "Order not found" }, { status: 404 });
-  return NextResponse.json(result);
+  const { data, error } = await supabase()
+    .from("orders")
+    .update({ status })
+    .eq("id", id)
+    .select()
+    .maybeSingle();
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (!data) return NextResponse.json({ error: "Order not found" }, { status: 404 });
+  return NextResponse.json(rowToOrder(data as OrderRow));
 }
