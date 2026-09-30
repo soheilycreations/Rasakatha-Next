@@ -51,6 +51,22 @@ create table if not exists category_meta (
   order_index integer not null default 999
 );
 
+-- In-store (POS) sales, kept in their own table separate from web `orders`
+-- so till/cashier billing never mixes with the online checkout flow, while
+-- reports can still combine both sources.
+create table if not exists pos_sales (
+  id text primary key,
+  created_at timestamptz not null default now(),
+  items jsonb not null,
+  subtotal numeric not null,
+  discount numeric not null default 0,
+  total numeric not null,
+  payment text not null default 'cash',
+  customer_name text,
+  note text
+);
+create index if not exists pos_sales_created_at_idx on pos_sales (created_at desc);
+
 -- All access goes through the server with the service-role key, which bypasses
 -- RLS. Enabling RLS with no policies blocks the public anon key entirely.
 alter table books enable row level security;
@@ -58,3 +74,4 @@ alter table orders enable row level security;
 alter table hero_slides enable row level security;
 alter table author_meta enable row level security;
 alter table category_meta enable row level security;
+alter table pos_sales enable row level security;

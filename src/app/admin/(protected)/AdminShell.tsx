@@ -6,13 +6,29 @@ import { usePathname, useRouter } from "next/navigation";
 import logoLight from "@/assets/rasakatha-logo-light-mode.png";
 import logoDark from "@/assets/rasakatha-logo-dark-mode.png";
 
-const NAV = [
-  { href: "/admin", label: "Dashboard", icon: "grid" },
-  { href: "/admin/orders", label: "Orders", icon: "box" },
-  { href: "/admin/books", label: "Books", icon: "book" },
-  { href: "/admin/authors", label: "Authors", icon: "user" },
-  { href: "/admin/categories", label: "Categories", icon: "tag" },
-  { href: "/admin/sliders", label: "Hero Sliders", icon: "image" },
+const NAV_GROUPS = [
+  {
+    label: "Overview",
+    items: [{ href: "/admin", label: "Dashboard", icon: "grid" }],
+  },
+  {
+    label: "Sales",
+    items: [
+      { href: "/admin/orders", label: "Web Orders", icon: "box" },
+      { href: "/admin/pos", label: "Point of Sale", icon: "till" },
+      { href: "/admin/pos/sales", label: "Shop Sales", icon: "receipt" },
+      { href: "/admin/reports", label: "Reports", icon: "chart" },
+    ],
+  },
+  {
+    label: "Catalog",
+    items: [
+      { href: "/admin/books", label: "Books", icon: "book" },
+      { href: "/admin/authors", label: "Authors", icon: "user" },
+      { href: "/admin/categories", label: "Categories", icon: "tag" },
+      { href: "/admin/sliders", label: "Hero Sliders", icon: "image" },
+    ],
+  },
 ] as const;
 
 function NavIcon({ name, className }: { name: string; className?: string }) {
@@ -30,6 +46,26 @@ function NavIcon({ name, className }: { name: string; className?: string }) {
         <path d="M21 8l-9-5-9 5 9 5 9-5z" />
         <path d="M3 8v8l9 5 9-5V8" />
         <path d="M12 13v8" />
+      </>
+    ),
+    till: (
+      <>
+        <rect x="2.5" y="9" width="19" height="12" rx="2" />
+        <path d="M6 9V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v3" />
+        <path d="M2.5 14h19" />
+        <circle cx="12" cy="17" r="1.4" fill="currentColor" stroke="none" />
+      </>
+    ),
+    receipt: (
+      <>
+        <path d="M6 2h12v19l-2.5-1.5L13 21l-1-1.5L11 21l-2.5-1.5L6 21z" />
+        <path d="M9 7h6M9 11h6M9 15h4" />
+      </>
+    ),
+    chart: (
+      <>
+        <path d="M4 20V10M12 20V4M20 20v-7" />
+        <path d="M2 20h20" />
       </>
     ),
     book: (
@@ -77,31 +113,43 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
 
   return (
     <div className="flex min-h-screen bg-[var(--bg)]">
-      <aside className="flex w-60 shrink-0 flex-col border-r border-[var(--border)] bg-sidebar px-4 py-6">
+      <aside className="flex w-60 shrink-0 flex-col overflow-y-auto border-r border-[var(--border)] bg-sidebar px-4 py-6">
         <div className="mb-8 flex items-center gap-2.5 px-2">
           <Image src={logoLight} alt="Rasakatha.lk" className="logo-light h-8 w-auto" priority />
           <Image src={logoDark} alt="Rasakatha.lk" className="logo-dark h-9 w-auto" priority />
           <div className="text-[10.5px] font-semibold uppercase tracking-wide text-[var(--ink-faint)]">Admin Panel</div>
         </div>
 
-        <nav className="flex flex-1 flex-col gap-1">
-          {NAV.map((item) => {
-            const active = item.href === "/admin" ? pathname === "/admin" : pathname.startsWith(item.href);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13.5px] font-semibold transition-colors ${
-                  active
-                    ? "bg-accent/[0.12] text-accent"
-                    : "text-[var(--ink-dim)] hover:bg-[var(--surface-tint)] hover:text-[var(--ink)]"
-                }`}
-              >
-                <NavIcon name={item.icon} className="h-4.5 w-4.5 shrink-0" />
-                {item.label}
-              </Link>
-            );
-          })}
+        <nav className="flex flex-1 flex-col gap-5">
+          {NAV_GROUPS.map((group) => (
+            <div key={group.label}>
+              <div className="mb-1.5 px-3 text-[10px] font-bold uppercase tracking-wider text-[var(--ink-faint)]">
+                {group.label}
+              </div>
+              <div className="flex flex-col gap-1">
+                {group.items.map((item) => {
+                  const active =
+                    item.href === "/admin" || item.href === "/admin/pos"
+                      ? pathname === item.href
+                      : pathname.startsWith(item.href);
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13.5px] font-semibold transition-colors ${
+                        active
+                          ? "bg-accent/[0.12] text-accent"
+                          : "text-[var(--ink-dim)] hover:bg-[var(--surface-tint)] hover:text-[var(--ink)]"
+                      }`}
+                    >
+                      <NavIcon name={item.icon} className="h-4.5 w-4.5 shrink-0" />
+                      {item.label}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
 
         <div className="flex flex-col gap-1 border-t border-[var(--border)] pt-4">
