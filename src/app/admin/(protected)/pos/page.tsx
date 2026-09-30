@@ -38,6 +38,8 @@ type HeldBill = {
   customerEmail: string;
 };
 
+const HELD_BILLS_KEY = "rasakatha:pos:heldBills";
+
 function PaymentIcon({ method, className }: { method: PosPaymentMethod; className?: string }) {
   if (method === "cash") {
     return (
@@ -190,12 +192,36 @@ export default function AdminPosPage() {
   const [reprintSale, setReprintSale] = useState<PosSale | null>(null);
   const [toast, setToast] = useState("");
   const [heldBills, setHeldBills] = useState<HeldBill[]>([]);
+  const [heldLoaded, setHeldLoaded] = useState(false);
   const [showHeld, setShowHeld] = useState(false);
   const [voidConfirm, setVoidConfirm] = useState(false);
   const [recentSales, setRecentSales] = useState<PosSale[]>([]);
 
   const searchRef = useRef<HTMLInputElement>(null);
   const qtyRef = useRef<HTMLInputElement>(null);
+
+  // Held bills survive navigating away from /admin/pos and back (the page
+  // unmounts on route change, which would otherwise wipe React state).
+  useEffect(() => {
+    queueMicrotask(() => {
+      try {
+        const saved = localStorage.getItem(HELD_BILLS_KEY);
+        if (saved) setHeldBills(JSON.parse(saved));
+      } catch {
+        // ignore malformed/unavailable storage
+      }
+      setHeldLoaded(true);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!heldLoaded) return;
+    try {
+      localStorage.setItem(HELD_BILLS_KEY, JSON.stringify(heldBills));
+    } catch {
+      // storage unavailable — held bills just won't persist across navigation
+    }
+  }, [heldBills, heldLoaded]);
 
   useEffect(() => {
     if (!debouncedQuery.trim()) {
@@ -278,7 +304,7 @@ export default function AdminPosPage() {
   const itemCount = bill.reduce((sum, i) => sum + i.qty, 0);
   const total = Math.max(0, subtotal - discount);
   const cashReceivedNum = Number(cashReceived) || 0;
-  const changeDue = payment === "cash" ? Math.max(0, cashReceivedNum - total) : 0;
+  const cashBalance = cashReceivedNum - total;
 
   const resetTill = () => {
     setBill([]);
@@ -484,7 +510,7 @@ export default function AdminPosPage() {
           {searching && <p className="text-[12.5px] text-[var(--ink-faint)]">Searching…</p>}
 
           {!pendingBook && results.length > 0 && (
-            <div className="flex flex-col gap-1 rounded-2xl border border-[var(--border)] bg-card p-2">
+            <div className="scrollbar-none flex max-h-[38vh] flex-col gap-1 overflow-y-auto rounded-2xl border border-[var(--border)] bg-card p-2">
               {results.map((book, i) => {
                 const price = book.onSale && book.salePrice ? book.salePrice : book.regularPrice;
                 const active = i === highlight;
@@ -534,7 +560,7 @@ export default function AdminPosPage() {
                 Search for a book above to start a new bill.
               </div>
             ) : (
-              <div className="flex flex-col gap-2">
+              <div className="scrollbar-none flex max-h-[42vh] flex-col gap-2 overflow-y-auto pr-1">
                 {bill.map((item, idx) => (
                   <div key={item.id} className="flex items-center gap-3 rounded-xl border border-[var(--border)] bg-card p-3">
                     <span className="w-4 shrink-0 text-center text-[11px] font-bold text-[var(--ink-faint)]">{idx + 1}</span>
@@ -648,9 +674,9 @@ export default function AdminPosPage() {
             />
           </div>
 
-          <div className="my-4 rounded-2xl bg-[var(--ink)] p-4 text-center">
+          <div className="my-3 flex items-center justify-between rounded-xl bg-[var(--ink)] px-4 py-2.5">
             <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--bg)] opacity-60">Total Due</div>
-            <div className="mt-1 font-display text-[30px] font-extrabold tabular-nums text-[var(--bg)]">{money(total)}</div>
+            <div className="font-display text-[19px] font-extrabold tabular-nums text-[var(--bg)]">{money(total)}</div>
           </div>
 
           {payment === "cash" && (
@@ -666,12 +692,18 @@ export default function AdminPosPage() {
                   className="w-28 rounded-lg border border-[var(--border)] bg-[var(--surface-tint)] px-2 py-1.5 text-right text-[13px] font-semibold text-[var(--ink)] focus:outline-none focus:border-accent/50"
                 />
               </div>
-              {cashReceivedNum > 0 && (
-                <div className="flex items-center justify-between rounded-xl bg-[#2f5a3a]/15 px-3 py-2 text-[13.5px] font-bold text-[#3f8a53]">
-                  <span>Change Due</span>
-                  <span>{money(changeDue)}</span>
-                </div>
-              )}
+              {cashReceivedNum > 0 &&
+                (cashBalance >= 0 ? (
+                  <div className="flex items-center justify-between rounded-xl bg-[#2f5a3a]/15 px-3 py-2 text-[13.5px] font-bold text-[#3f8a53]">
+                    <span>Change Due</span>
+                    <span>{money(cashBalance)}</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between rounded-xl bg-accent/15 px-3 py-2 text-[13.5px] font-bold text-accent">
+                    <span>Short By</span>
+                    <span>-{money(Math.abs(cashBalance))}</span>
+                  </div>
+                ))}
             </div>
           )}
 
