@@ -23,15 +23,22 @@ const emptyForm: Partial<CatalogBook> = {
 
 function BookForm({
   initial,
+  categories,
+  authors,
+  publishers,
   onCancel,
   onSaved,
 }: {
   initial: Partial<CatalogBook>;
+  categories: string[];
+  authors: string[];
+  publishers: string[];
   onCancel: () => void;
   onSaved: () => void;
 }) {
   const [form, setForm] = useState<Partial<CatalogBook>>(initial);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const isEdit = !!initial.id;
 
@@ -40,6 +47,30 @@ function BookForm({
 
   const inputClass =
     "w-full rounded-lg border border-[var(--border)] bg-[var(--surface-tint)] px-3 py-2 text-[13px] text-[var(--ink)] placeholder:text-[var(--ink-faint)] focus:outline-none focus:border-accent/50";
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setUploading(true);
+    setError("");
+    try {
+      const body = new FormData();
+      body.append("file", file);
+      body.append("idHint", form.id || form.title || "");
+      const res = await fetch("/api/admin/upload", { method: "POST", body });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Could not upload that image.");
+        return;
+      }
+      set("cover", data.url);
+    } catch {
+      setError("Network error while uploading — try again.");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!form.title?.trim()) {
@@ -76,10 +107,43 @@ function BookForm({
         <h3 className="mb-4 text-[16px] font-bold text-[var(--ink)]">{isEdit ? "Edit Book" : "Add Book"}</h3>
         <div className="grid gap-3">
           <input className={inputClass} placeholder="Title" value={form.title || ""} onChange={(e) => set("title", e.target.value)} />
-          <input className={inputClass} placeholder="Author" value={form.author || ""} onChange={(e) => set("author", e.target.value)} />
+          <input
+            className={inputClass}
+            list="author-options"
+            placeholder="Author"
+            value={form.author || ""}
+            onChange={(e) => set("author", e.target.value)}
+          />
+          <datalist id="author-options">
+            {authors.map((a) => (
+              <option key={a} value={a} />
+            ))}
+          </datalist>
           <div className="grid grid-cols-2 gap-3">
-            <input className={inputClass} placeholder="Publisher" value={form.publisher || ""} onChange={(e) => set("publisher", e.target.value)} />
-            <input className={inputClass} placeholder="Category" value={form.category || ""} onChange={(e) => set("category", e.target.value)} />
+            <input
+              className={inputClass}
+              list="publisher-options"
+              placeholder="Publisher"
+              value={form.publisher || ""}
+              onChange={(e) => set("publisher", e.target.value)}
+            />
+            <datalist id="publisher-options">
+              {publishers.map((p) => (
+                <option key={p} value={p} />
+              ))}
+            </datalist>
+            <input
+              className={inputClass}
+              list="category-options"
+              placeholder="Category"
+              value={form.category || ""}
+              onChange={(e) => set("category", e.target.value)}
+            />
+            <datalist id="category-options">
+              {categories.map((c) => (
+                <option key={c} value={c} />
+              ))}
+            </datalist>
           </div>
           <div className="grid grid-cols-3 gap-3">
             <input
@@ -104,12 +168,30 @@ function BookForm({
               onChange={(e) => set("weight", Number(e.target.value))}
             />
           </div>
-          <div className="flex items-center gap-3">
-            <input className={inputClass} placeholder="Cover image URL" value={form.cover || ""} onChange={(e) => set("cover", e.target.value)} />
-            {form.cover && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={form.cover} alt="" className="h-14 w-10 shrink-0 rounded-md border border-[var(--border)] object-cover" />
-            )}
+          <div>
+            <div className="mb-1.5 text-[11.5px] font-semibold text-[var(--ink-dim)]">Cover Image</div>
+            <div className="flex items-center gap-3">
+              {form.cover ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={form.cover} alt="" className="h-20 w-14 shrink-0 rounded-md border border-[var(--border)] object-cover" />
+              ) : (
+                <div className="grid h-20 w-14 shrink-0 place-items-center rounded-md border border-dashed border-[var(--border-strong)] text-[9px] text-[var(--ink-faint)]">
+                  No cover
+                </div>
+              )}
+              <div className="flex flex-1 flex-col gap-2">
+                <label className="w-fit cursor-pointer rounded-lg border border-[var(--border)] bg-[var(--surface-tint)] px-3 py-2 text-[12.5px] font-semibold text-[var(--ink)] hover:bg-[var(--surface-tint-strong)]">
+                  {uploading ? "Uploading…" : form.cover ? "Replace Image" : "Upload Image"}
+                  <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" disabled={uploading} onChange={handleFileSelect} />
+                </label>
+                <input
+                  className={`${inputClass} text-[12px]`}
+                  placeholder="…or paste an image URL"
+                  value={form.cover || ""}
+                  onChange={(e) => set("cover", e.target.value)}
+                />
+              </div>
+            </div>
           </div>
           <textarea
             className={`${inputClass} resize-none`}
@@ -134,7 +216,7 @@ function BookForm({
           <button onClick={onCancel} className="rounded-full px-4 py-2 text-[13px] font-semibold text-[var(--ink-dim)] hover:bg-[var(--surface-tint)]">
             Cancel
           </button>
-          <button onClick={handleSave} disabled={saving} className="btn-accent rounded-full px-5 py-2 text-[13px] font-bold text-white disabled:opacity-60">
+          <button onClick={handleSave} disabled={saving || uploading} className="btn-accent rounded-full px-5 py-2 text-[13px] font-bold text-white disabled:opacity-60">
             {saving ? "Saving…" : "Save Book"}
           </button>
         </div>
@@ -153,6 +235,21 @@ export default function AdminBooksPage() {
   const [editing, setEditing] = useState<Partial<CatalogBook> | null>(null);
   const [deleting, setDeleting] = useState<CatalogBook | null>(null);
   const [toast, setToast] = useState("");
+  const [categories, setCategories] = useState<string[]>([]);
+  const [authors, setAuthors] = useState<string[]>([]);
+  const [publishers, setPublishers] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetch("/api/admin/categories")
+      .then((r) => r.json())
+      .then((data: { name: string }[]) => setCategories(data.map((c) => c.name)));
+    fetch("/api/admin/authors")
+      .then((r) => r.json())
+      .then((data: { name: string }[]) => setAuthors(data.map((a) => a.name)));
+    fetch("/api/admin/publishers")
+      .then((r) => r.json())
+      .then((data: string[]) => setPublishers(data));
+  }, []);
 
   const load = () => {
     const params = new URLSearchParams({ page: String(page), limit: "20", search });
@@ -296,6 +393,9 @@ export default function AdminBooksPage() {
       {editing && (
         <BookForm
           initial={editing}
+          categories={categories}
+          authors={authors}
+          publishers={publishers}
           onCancel={() => setEditing(null)}
           onSaved={() => {
             setEditing(null);
