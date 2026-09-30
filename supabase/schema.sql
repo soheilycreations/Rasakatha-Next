@@ -63,9 +63,14 @@ create table if not exists pos_sales (
   total numeric not null,
   payment text not null default 'cash',
   customer_name text,
+  customer_phone text,
+  customer_email text,
   note text
 );
 create index if not exists pos_sales_created_at_idx on pos_sales (created_at desc);
+-- Safe to re-run: adds the columns if this table already existed without them.
+alter table pos_sales add column if not exists customer_phone text;
+alter table pos_sales add column if not exists customer_email text;
 
 -- All access goes through the server with the service-role key, which bypasses
 -- RLS. Enabling RLS with no policies blocks the public anon key entirely.

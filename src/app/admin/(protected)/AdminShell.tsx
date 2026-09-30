@@ -17,6 +17,7 @@ const NAV_GROUPS = [
       { href: "/admin/orders", label: "Web Orders", icon: "box" },
       { href: "/admin/pos", label: "Point of Sale", icon: "till" },
       { href: "/admin/pos/sales", label: "Shop Sales", icon: "receipt" },
+      { href: "/admin/customers", label: "Customers", icon: "user" },
       { href: "/admin/reports", label: "Reports", icon: "chart" },
     ],
   },

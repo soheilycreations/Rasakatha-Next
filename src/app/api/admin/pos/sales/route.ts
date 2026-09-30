@@ -25,6 +25,8 @@ export async function POST(request: Request) {
   const discount = Number(body.discount) || 0;
   const payment = VALID_PAYMENTS.includes(body.payment) ? (body.payment as PosPaymentMethod) : "cash";
   const customerName = body.customerName?.trim() || null;
+  const customerPhone = body.customerPhone?.trim() || null;
+  const customerEmail = body.customerEmail?.trim().toLowerCase() || null;
   const note = body.note?.trim() || null;
 
   if (!Array.isArray(items) || items.length === 0) {
@@ -45,6 +47,8 @@ export async function POST(request: Request) {
         total,
         payment,
         customer_name: customerName,
+        customer_phone: customerPhone,
+        customer_email: customerEmail,
         note,
       })
       .select()

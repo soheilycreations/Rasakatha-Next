@@ -323,3 +323,49 @@ body {
 [data-theme="light"] .logo-light {
   display: block;
 }
+
+/* POS thermal receipt printing. #pos-print-area stays `hidden` (display:none)
+   on screen and is only revealed inside @media print, where everything else
+   on the page is hidden so a thermal printer only sees the receipt itself. */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #pos-print-area,
+  #pos-print-area * {
+    visibility: visible;
+  }
+  #pos-print-area {
+    display: block !important;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 80mm;
+  }
+  @page {
+    size: 80mm auto;
+    margin: 4mm;
+  }
+}
+
+.receipt-print {
+  font-family: var(--font-mono), "Courier New", monospace;
+  font-size: 12px;
+  color: #000;
+  line-height: 1.5;
+}
+.receipt-center {
+  text-align: center;
+}
+.receipt-bold {
+  font-weight: 700;
+}
+.receipt-rule {
+  border-top: 1px dashed #000;
+  margin: 6px 0;
+}
+.receipt-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}

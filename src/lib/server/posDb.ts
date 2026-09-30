@@ -9,6 +9,8 @@ export type PosSaleRow = {
   total: number;
   payment: string;
   customer_name: string | null;
+  customer_phone: string | null;
+  customer_email: string | null;
   note: string | null;
 };
 
@@ -22,6 +24,8 @@ export function rowToPosSale(r: PosSaleRow): PosSale {
     total: Number(r.total),
     payment: r.payment as PosPaymentMethod,
     customerName: r.customer_name ?? undefined,
+    customerPhone: r.customer_phone ?? undefined,
+    customerEmail: r.customer_email ?? undefined,
     note: r.note ?? undefined,
   };
 }

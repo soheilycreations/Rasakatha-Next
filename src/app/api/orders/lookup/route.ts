@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/server/supabase";
 import { rowToOrder, type OrderRow } from "@/lib/server/ordersDb";
-
-const normalize = (p: string) => p.replace(/\D/g, "").replace(/^94/, "0");
+import { normalizePhone as normalize } from "@/lib/phone";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);

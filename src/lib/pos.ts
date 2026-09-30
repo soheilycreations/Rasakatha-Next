@@ -22,5 +22,7 @@ export type PosSale = {
   total: number;
   payment: PosPaymentMethod;
   customerName?: string;
+  customerPhone?: string;
+  customerEmail?: string;
   note?: string;
 };
