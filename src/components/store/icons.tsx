@@ -189,6 +189,32 @@ export function IconTruck(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
+export function IconTrendUp(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" {...props}>
+      <path d="M3 17 10 10 14 14 21 6" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M15 6h6v6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function IconTrendDown(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" {...props}>
+      <path d="M3 7 10 14 14 10 21 18" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M15 18h6v-6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function IconTrendFlat(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" {...props}>
+      <path d="M3 12h18" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export function IconHeart(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...props}>

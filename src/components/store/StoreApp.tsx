@@ -134,6 +134,12 @@ export default function StoreApp({ slides }: { slides: HeroSlide[] }) {
     setNav("Product");
   };
 
+  const goToProductById = (id: string) => {
+    setProductOrigin((current) => (nav === "Product" ? current : nav));
+    setPendingProduct(id);
+    setNav("Product");
+  };
+
   const goToCart = () => setNav("Cart");
   const goToCheckout = () => setNav("Checkout");
 
@@ -179,7 +185,7 @@ export default function StoreApp({ slides }: { slides: HeroSlide[] }) {
             if (l !== "Categories") setPendingCategory(undefined);
             setNav(l);
           }}
-          onSelectAuthor={goToAuthor}
+          onOpenBook={goToProductById}
         />
 
         {mobileNavOpen && (
@@ -194,8 +200,8 @@ export default function StoreApp({ slides }: { slides: HeroSlide[] }) {
                   setNav(l);
                   setMobileNavOpen(false);
                 }}
-                onSelectAuthor={(name) => {
-                  goToAuthor(name);
+                onOpenBook={(id) => {
+                  goToProductById(id);
                   setMobileNavOpen(false);
                 }}
               />

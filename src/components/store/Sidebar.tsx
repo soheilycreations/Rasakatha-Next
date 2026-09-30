@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import AuthorAvatar from "./AuthorAvatar";
-import type { AuthorSummary } from "@/lib/catalog";
+import BookCover from "./BookCover";
+import TrendBadge from "./TrendBadge";
+import { tintForId } from "@/lib/format";
 import { NAV_ITEMS } from "@/lib/store-data";
-import { IconHome, IconCategories, IconLibrary, IconStar } from "./icons";
+import { IconHome, IconCategories, IconLibrary } from "./icons";
 import logoLight from "@/assets/rasakatha-logo-light-mode.png";
 import logoDark from "@/assets/rasakatha-logo-dark-mode.png";
 
@@ -15,23 +16,37 @@ const NAV_ICONS = {
   "My Library": IconLibrary,
 };
 
+type TrendingBook = {
+  id: string;
+  title: string;
+  author: string;
+  cover: string | null;
+  qtySold: number;
+  trend: "up" | "down" | "flat";
+  changePct: number;
+};
+
 export default function Sidebar({
   nav,
   onNavSelect,
-  onSelectAuthor,
+  onOpenBook,
   variant = "desktop",
 }: {
   nav: string;
   onNavSelect: (label: string) => void;
-  onSelectAuthor: (name: string) => void;
+  onOpenBook: (id: string) => void;
   variant?: "desktop" | "drawer";
 }) {
-  const [authors, setAuthors] = useState<AuthorSummary[]>([]);
+  const [trending, setTrending] = useState<TrendingBook[]>([]);
+  const [basis, setBasis] = useState<"recent" | "all_time">("recent");
 
   useEffect(() => {
-    fetch("/api/authors?limit=20")
+    fetch("/api/trending-books?limit=8")
       .then((r) => r.json())
-      .then((data: AuthorSummary[]) => setAuthors(data));
+      .then((data: { items: TrendingBook[]; basis: "recent" | "all_time" }) => {
+        setTrending(data.items);
+        setBasis(data.basis);
+      });
   }, []);
 
   return (
@@ -81,25 +96,29 @@ export default function Sidebar({
         })}
       </nav>
 
-      <div className="mb-3.5 ml-3.5 mt-[30px] text-[10.5px] tracking-[0.18em] text-[var(--ink-faint)] uppercase">
-        Top authors
+      <div className="mb-3.5 ml-3.5 mt-[30px] flex items-center gap-1.5 text-[10.5px] tracking-[0.18em] text-[var(--ink-faint)] uppercase">
+        Trending books
+        {basis === "recent" && <span className="h-1.5 w-1.5 rounded-full bg-accent" title="Live, based on this week's sales" />}
       </div>
       <div className="scrollbar-none -mx-1 flex min-h-[150px] flex-1 flex-col gap-1 overflow-y-auto">
-        {authors.map((a) => (
+        {trending.map((book, i) => (
           <button
-            key={a.name}
-            onClick={() => onSelectAuthor(a.name)}
+            key={book.id}
+            onClick={() => onOpenBook(book.id)}
             className="flex items-center gap-3 rounded-xl px-2.5 py-2 text-left transition-colors hover:bg-[var(--surface-tint)]"
           >
-            <AuthorAvatar name={a.name} size={38} className="text-[13px]" />
+            <span className="w-3.5 shrink-0 text-center text-[11px] font-bold text-[var(--ink-faint)]">{i + 1}</span>
+            <BookCover
+              cover={book.cover || undefined}
+              tint={tintForId(book.id)}
+              alt={book.title}
+              className="h-[46px] w-[34px] shrink-0 rounded-md"
+            />
             <div className="min-w-0 flex-1">
-              <div className="truncate text-sm font-medium text-[var(--ink)]">{a.name}</div>
-              <div className="flex items-center gap-2 text-xs text-[var(--ink-faint)]">
-                <span>{a.count} books</span>
-                <span className="flex items-center gap-0.5">
-                  <IconStar className="h-3 w-3" style={{ fill: "#f5b301", color: "#f5b301" }} />
-                  {a.avgRating.toFixed(1)}
-                </span>
+              <div className="truncate text-sm font-medium text-[var(--ink)]">{book.title}</div>
+              <div className="mt-0.5 flex items-center gap-1.5 text-xs text-[var(--ink-faint)]">
+                <span className="truncate">{book.qtySold} sold</span>
+                <TrendBadge trend={book.trend} changePct={book.changePct} />
               </div>
             </div>
           </button>
