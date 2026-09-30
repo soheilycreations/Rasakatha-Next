@@ -32,7 +32,14 @@ export default function HomeView({
         <HeroCarousel slides={slides} wish={wish} onToggleWish={onToggleWish} onBuy={onBuyHero} />
       )}
 
-      <CategoryTiles onSelect={onSelectCategory} />
+      <HomeRow
+        title="From Rasakatha Publishers"
+        fetchUrl="/api/books?publisher=RasaKatha&limit=16"
+        wish={wish}
+        onToggleWish={onToggleWish}
+        onAdd={onAdd}
+        onOpen={onOpen}
+      />
 
       <HomeRow
         title="New Arrivals"
@@ -43,14 +50,7 @@ export default function HomeView({
         onOpen={onOpen}
       />
 
-      <HomeRow
-        title="From Rasakatha Publishers"
-        fetchUrl="/api/books?publisher=RasaKatha&limit=16"
-        wish={wish}
-        onToggleWish={onToggleWish}
-        onAdd={onAdd}
-        onOpen={onOpen}
-      />
+      <CategoryTiles onSelect={onSelectCategory} />
 
       <AboutBanner />
 

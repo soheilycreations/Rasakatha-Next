@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/server/supabase";
-import { getByIds } from "@/lib/catalog";
+import { getByIds, getNewest } from "@/lib/catalog";
 
 const RECENT_DAYS = 7;
 const PREVIOUS_DAYS = 7;
@@ -15,7 +15,7 @@ function daysAgo(n: number): string {
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const limit = Math.min(20, Number(searchParams.get("limit") || "8")) || 8;
+  const limit = Math.min(20, Number(searchParams.get("limit") || "10")) || 10;
 
   const since = daysAgo(RECENT_DAYS + PREVIOUS_DAYS);
   const { data, error } = await supabase()
@@ -35,11 +35,16 @@ export async function GET(request: Request) {
     }
   }
 
-  // A brand-new store has no sales history yet — fall back to all-time qty so
-  // the section isn't just empty, but be honest about it via `basis`.
-  let ranked = [...recentQty.entries()].sort((a, b) => b[1] - a[1]);
-  let basis: "recent" | "all_time" = "recent";
-  if (ranked.length === 0) {
+  const basis: "recent" | "all_time" = recentQty.size > 0 ? "recent" : "all_time";
+  const ranked = [...recentQty.entries()].sort((a, b) => b[1] - a[1]);
+  const chosen: { id: string; qty: number }[] = ranked.slice(0, limit).map(([id, qty]) => ({ id, qty }));
+  const used = new Set(chosen.map((c) => c.id));
+
+  // Sales in the last week alone rarely covers a full top-10, so pad out with
+  // all-time bestsellers, then simply-in-stock catalog picks, so the section
+  // never looks sparse — padding items are still honestly marked qtySold: 0 /
+  // trend: "flat" rather than pretending they sold recently.
+  if (chosen.length < limit) {
     const { data: allOrders, error: allError } = await supabase().from("orders").select("items");
     if (allError) return NextResponse.json({ error: allError.message }, { status: 500 });
     const allTimeQty = new Map<string, number>();
@@ -48,20 +53,34 @@ export async function GET(request: Request) {
         allTimeQty.set(item.id, (allTimeQty.get(item.id) ?? 0) + item.qty);
       }
     }
-    ranked = [...allTimeQty.entries()].sort((a, b) => b[1] - a[1]);
-    basis = "all_time";
+    const allTimeRanked = [...allTimeQty.entries()].sort((a, b) => b[1] - a[1]);
+    for (const [id] of allTimeRanked) {
+      if (chosen.length >= limit) break;
+      if (used.has(id)) continue;
+      chosen.push({ id, qty: recentQty.get(id) ?? 0 });
+      used.add(id);
+    }
   }
 
-  const top = ranked.slice(0, limit);
-  const books = await getByIds(top.map(([id]) => id));
+  if (chosen.length < limit) {
+    const filler = await getNewest(limit * 2);
+    for (const book of filler) {
+      if (chosen.length >= limit) break;
+      if (used.has(book.id)) continue;
+      chosen.push({ id: book.id, qty: 0 });
+      used.add(book.id);
+    }
+  }
+
+  const books = await getByIds(chosen.map((c) => c.id));
   const bookById = new Map(books.map((b) => [b.id, b]));
 
-  const items = top
-    .map(([id, qty]) => {
+  const items = chosen
+    .map(({ id, qty }) => {
       const book = bookById.get(id);
       if (!book) return null;
       const prev = previousQty.get(id) ?? 0;
-      const trend: "up" | "down" | "flat" = basis === "all_time" || qty === prev ? "flat" : qty > prev ? "up" : "down";
+      const trend: "up" | "down" | "flat" = qty === prev ? "flat" : qty > prev ? "up" : "down";
       const changePct = prev > 0 ? Math.round(((qty - prev) / prev) * 100) : qty > 0 ? 100 : 0;
       return {
         id: book.id,

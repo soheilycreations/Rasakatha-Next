@@ -41,7 +41,7 @@ export default function Sidebar({
   const [basis, setBasis] = useState<"recent" | "all_time">("recent");
 
   useEffect(() => {
-    fetch("/api/trending-books?limit=8")
+    fetch("/api/trending-books?limit=10")
       .then((r) => r.json())
       .then((data: { items: TrendingBook[]; basis: "recent" | "all_time" }) => {
         setTrending(data.items);
@@ -117,8 +117,14 @@ export default function Sidebar({
             <div className="min-w-0 flex-1">
               <div className="truncate text-sm font-medium text-[var(--ink)]">{book.title}</div>
               <div className="mt-0.5 flex items-center gap-1.5 text-xs text-[var(--ink-faint)]">
-                <span className="truncate">{book.qtySold} sold</span>
-                <TrendBadge trend={book.trend} changePct={book.changePct} />
+                {book.qtySold > 0 ? (
+                  <>
+                    <span className="truncate">{book.qtySold} sold</span>
+                    <TrendBadge trend={book.trend} changePct={book.changePct} />
+                  </>
+                ) : (
+                  <span className="truncate">No sales yet</span>
+                )}
               </div>
             </div>
           </button>
