@@ -1,7 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
+import logoLight from "@/assets/rasakatha-logo-light-mode.png";
+import logoDark from "@/assets/rasakatha-logo-dark-mode.png";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -39,11 +42,9 @@ export default function AdminLoginPage() {
         onSubmit={handleSubmit}
         className="w-full max-w-sm rounded-2xl border border-[var(--border)] bg-card p-7 shadow-[0_20px_60px_-20px_rgba(0,0,0,0.5)]"
       >
-        <div className="mx-auto mb-5 grid h-12 w-12 place-items-center rounded-full bg-accent/[0.12] text-accent">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-6 w-6">
-            <rect x="3" y="11" width="18" height="10" rx="2" />
-            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-          </svg>
+        <div className="mx-auto mb-5 flex items-center justify-center">
+          <Image src={logoLight} alt="Rasakatha.lk" className="logo-light h-11 w-auto" priority />
+          <Image src={logoDark} alt="Rasakatha.lk" className="logo-dark h-14 w-auto" priority />
         </div>
         <h1 className="text-center font-display text-xl font-bold text-[var(--ink)]">Rasakatha Admin</h1>
         <p className="mt-1 text-center text-[13px] text-[var(--ink-faint)]">Sign in to manage your store.</p>

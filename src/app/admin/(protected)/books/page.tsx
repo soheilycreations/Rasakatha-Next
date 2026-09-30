@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import type { CatalogBook } from "@/lib/catalog";
 import { money } from "@/lib/format";
+import ConfirmModal from "../ConfirmModal";
+import Toast from "../Toast";
 
 const emptyForm: Partial<CatalogBook> = {
   title: "",
@@ -30,6 +32,7 @@ function BookForm({
 }) {
   const [form, setForm] = useState<Partial<CatalogBook>>(initial);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
   const isEdit = !!initial.id;
 
   const set = <K extends keyof CatalogBook>(key: K, value: CatalogBook[K]) =>
@@ -39,14 +42,29 @@ function BookForm({
     "w-full rounded-lg border border-[var(--border)] bg-[var(--surface-tint)] px-3 py-2 text-[13px] text-[var(--ink)] placeholder:text-[var(--ink-faint)] focus:outline-none focus:border-accent/50";
 
   const handleSave = async () => {
+    if (!form.title?.trim()) {
+      setError("Title is required");
+      return;
+    }
     setSaving(true);
-    await fetch("/api/admin/books", {
-      method: isEdit ? "PUT" : "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
-    setSaving(false);
-    onSaved();
+    setError("");
+    try {
+      const res = await fetch("/api/admin/books", {
+        method: isEdit ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || "Could not save this book. Try again.");
+        return;
+      }
+      onSaved();
+    } catch {
+      setError("Network error — check your connection and try again.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -86,7 +104,13 @@ function BookForm({
               onChange={(e) => set("weight", Number(e.target.value))}
             />
           </div>
-          <input className={inputClass} placeholder="Cover image URL" value={form.cover || ""} onChange={(e) => set("cover", e.target.value)} />
+          <div className="flex items-center gap-3">
+            <input className={inputClass} placeholder="Cover image URL" value={form.cover || ""} onChange={(e) => set("cover", e.target.value)} />
+            {form.cover && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={form.cover} alt="" className="h-14 w-10 shrink-0 rounded-md border border-[var(--border)] object-cover" />
+            )}
+          </div>
           <textarea
             className={`${inputClass} resize-none`}
             placeholder="Blurb"
@@ -105,6 +129,7 @@ function BookForm({
             </label>
           </div>
         </div>
+        {error && <p className="mt-3 text-[12.5px] font-semibold text-accent">{error}</p>}
         <div className="mt-5 flex justify-end gap-2">
           <button onClick={onCancel} className="rounded-full px-4 py-2 text-[13px] font-semibold text-[var(--ink-dim)] hover:bg-[var(--surface-tint)]">
             Cancel
@@ -126,6 +151,8 @@ export default function AdminBooksPage() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Partial<CatalogBook> | null>(null);
+  const [deleting, setDeleting] = useState<CatalogBook | null>(null);
+  const [toast, setToast] = useState("");
 
   const load = () => {
     const params = new URLSearchParams({ page: String(page), limit: "20", search });
@@ -144,10 +171,22 @@ export default function AdminBooksPage() {
     load();
   }, [page, search]);
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Delete this book?")) return;
-    await fetch(`/api/admin/books?id=${id}`, { method: "DELETE" });
-    load();
+  useEffect(() => {
+    if (!toast) return;
+    const id = setTimeout(() => setToast(""), 2500);
+    return () => clearTimeout(id);
+  }, [toast]);
+
+  const handleDelete = async () => {
+    if (!deleting) return;
+    const res = await fetch(`/api/admin/books?id=${deleting.id}`, { method: "DELETE" });
+    setDeleting(null);
+    if (res.ok) {
+      setToast(`Deleted "${deleting.title}"`);
+      load();
+    } else {
+      setToast("Could not delete that book. Try again.");
+    }
   };
 
   return (
@@ -173,13 +212,27 @@ export default function AdminBooksPage() {
       />
 
       {loading ? (
-        <p className="text-[13.5px] text-[var(--ink-faint)]">Loading…</p>
+        <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-card">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-3 border-b border-[var(--border)] px-4 py-3 last:border-b-0">
+              <div className="h-12 w-9 animate-pulse rounded-md bg-[var(--surface-tint-strong)]" />
+              <div className="flex-1 space-y-1.5">
+                <div className="h-3 w-1/3 animate-pulse rounded bg-[var(--surface-tint-strong)]" />
+                <div className="h-2.5 w-1/5 animate-pulse rounded bg-[var(--surface-tint)]" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : items.length === 0 ? (
+        <div className="rounded-2xl border border-[var(--border)] bg-card p-8 text-center text-[13.5px] text-[var(--ink-faint)]">
+          No books match &quot;{search}&quot;.
+        </div>
       ) : (
         <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-card">
           <table className="w-full text-left text-[13px]">
             <thead>
               <tr className="border-b border-[var(--border)] text-[var(--ink-faint)]">
-                <th className="px-4 py-3 font-semibold">Title</th>
+                <th className="px-4 py-3 font-semibold" colSpan={2}>Title</th>
                 <th className="px-4 py-3 font-semibold">Author</th>
                 <th className="px-4 py-3 font-semibold">Category</th>
                 <th className="px-4 py-3 font-semibold">Price</th>
@@ -190,7 +243,17 @@ export default function AdminBooksPage() {
             <tbody>
               {items.map((b) => (
                 <tr key={b.id} className="border-b border-[var(--border)] transition-colors last:border-b-0 hover:bg-[var(--surface-tint)]">
-                  <td className="max-w-[240px] truncate px-4 py-3 font-semibold text-[var(--ink)]">{b.title}</td>
+                  <td className="w-12 py-2 pl-4">
+                    {b.cover ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={b.cover} alt="" className="h-12 w-9 rounded-md border border-[var(--border)] object-cover" />
+                    ) : (
+                      <div className="grid h-12 w-9 place-items-center rounded-md bg-[var(--surface-tint-strong)] text-[9px] text-[var(--ink-faint)]">
+                        No cover
+                      </div>
+                    )}
+                  </td>
+                  <td className="max-w-[220px] truncate px-4 py-3 font-semibold text-[var(--ink)]">{b.title}</td>
                   <td className="px-4 py-3 text-[var(--ink-dim)]">{b.author}</td>
                   <td className="px-4 py-3 text-[var(--ink-dim)]">{b.category}</td>
                   <td className="px-4 py-3 text-[var(--ink)]">
@@ -205,7 +268,7 @@ export default function AdminBooksPage() {
                     <button onClick={() => setEditing(b)} className="mr-3 text-[12px] font-semibold text-accent-blue hover:opacity-75">
                       Edit
                     </button>
-                    <button onClick={() => handleDelete(b.id)} className="text-[12px] font-semibold text-accent hover:opacity-75">
+                    <button onClick={() => setDeleting(b)} className="text-[12px] font-semibold text-accent hover:opacity-75">
                       Delete
                     </button>
                   </td>
@@ -236,10 +299,22 @@ export default function AdminBooksPage() {
           onCancel={() => setEditing(null)}
           onSaved={() => {
             setEditing(null);
+            setToast(editing.id ? "Book updated" : "Book added");
             load();
           }}
         />
       )}
+
+      {deleting && (
+        <ConfirmModal
+          title="Delete this book?"
+          description={`"${deleting.title}" will be removed from the store immediately and can't be undone.`}
+          onCancel={() => setDeleting(null)}
+          onConfirm={handleDelete}
+        />
+      )}
+
+      {toast && <Toast message={toast} />}
     </div>
   );
 }

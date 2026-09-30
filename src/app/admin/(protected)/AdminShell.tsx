@@ -1,7 +1,10 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import logoLight from "@/assets/rasakatha-logo-light-mode.png";
+import logoDark from "@/assets/rasakatha-logo-dark-mode.png";
 
 const NAV = [
   { href: "/admin", label: "Dashboard", icon: "grid" },
@@ -76,16 +79,9 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
     <div className="flex min-h-screen bg-[var(--bg)]">
       <aside className="flex w-60 shrink-0 flex-col border-r border-[var(--border)] bg-sidebar px-4 py-6">
         <div className="mb-8 flex items-center gap-2.5 px-2">
-          <div className="grid h-8 w-8 place-items-center rounded-lg bg-accent text-white">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4.5 w-4.5">
-              <rect x="3" y="11" width="18" height="10" rx="2" />
-              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-            </svg>
-          </div>
-          <div>
-            <div className="font-display text-[14px] font-bold text-[var(--ink)]">Rasakatha</div>
-            <div className="text-[10.5px] font-semibold uppercase tracking-wide text-[var(--ink-faint)]">Admin Panel</div>
-          </div>
+          <Image src={logoLight} alt="Rasakatha.lk" className="logo-light h-8 w-auto" priority />
+          <Image src={logoDark} alt="Rasakatha.lk" className="logo-dark h-9 w-auto" priority />
+          <div className="text-[10.5px] font-semibold uppercase tracking-wide text-[var(--ink-faint)]">Admin Panel</div>
         </div>
 
         <nav className="flex flex-1 flex-col gap-1">
