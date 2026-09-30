@@ -5,6 +5,7 @@ import type { CatalogBook } from "@/lib/catalog";
 import { money } from "@/lib/format";
 import ConfirmModal from "../ConfirmModal";
 import Toast from "../Toast";
+import Combobox from "../Combobox";
 
 const emptyForm: Partial<CatalogBook> = {
   title: "",
@@ -107,43 +108,28 @@ function BookForm({
         <h3 className="mb-4 text-[16px] font-bold text-[var(--ink)]">{isEdit ? "Edit Book" : "Add Book"}</h3>
         <div className="grid gap-3">
           <input className={inputClass} placeholder="Title" value={form.title || ""} onChange={(e) => set("title", e.target.value)} />
-          <input
+          <Combobox
             className={inputClass}
-            list="author-options"
             placeholder="Author"
             value={form.author || ""}
-            onChange={(e) => set("author", e.target.value)}
+            options={authors}
+            onChange={(v) => set("author", v)}
           />
-          <datalist id="author-options">
-            {authors.map((a) => (
-              <option key={a} value={a} />
-            ))}
-          </datalist>
           <div className="grid grid-cols-2 gap-3">
-            <input
+            <Combobox
               className={inputClass}
-              list="publisher-options"
               placeholder="Publisher"
               value={form.publisher || ""}
-              onChange={(e) => set("publisher", e.target.value)}
+              options={publishers}
+              onChange={(v) => set("publisher", v)}
             />
-            <datalist id="publisher-options">
-              {publishers.map((p) => (
-                <option key={p} value={p} />
-              ))}
-            </datalist>
-            <input
+            <Combobox
               className={inputClass}
-              list="category-options"
               placeholder="Category"
               value={form.category || ""}
-              onChange={(e) => set("category", e.target.value)}
+              options={categories}
+              onChange={(v) => set("category", v)}
             />
-            <datalist id="category-options">
-              {categories.map((c) => (
-                <option key={c} value={c} />
-              ))}
-            </datalist>
           </div>
           <div className="grid grid-cols-3 gap-3">
             <input
