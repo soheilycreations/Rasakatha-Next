@@ -69,7 +69,7 @@ function CustomerDetailModal({ phone, onClose }: { phone: string; onClose: () =>
               </div>
               <div className="text-right">
                 <div className="text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-faint)]">Lifetime Spend</div>
-                <div className="font-display text-[20px] font-extrabold text-[var(--ink)]">{money(detail.totalSpent)}</div>
+                <div className="font-sans text-[20px] font-extrabold tabular-nums text-[var(--ink)]">{money(detail.totalSpent)}</div>
               </div>
             </div>
 

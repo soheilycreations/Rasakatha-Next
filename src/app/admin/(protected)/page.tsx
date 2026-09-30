@@ -36,7 +36,7 @@ function StatCard({ label, value, sub }: { label: string; value: string; sub?: s
   return (
     <div className="rounded-2xl border border-[var(--border)] bg-card p-5">
       <div className="text-[12.5px] font-semibold text-[var(--ink-faint)]">{label}</div>
-      <div className="mt-1.5 font-display text-[26px] font-extrabold text-[var(--ink)]">{value}</div>
+      <div className="mt-1.5 font-sans text-[26px] font-extrabold tabular-nums text-[var(--ink)]">{value}</div>
       {sub && <div className="mt-1 text-[12px] text-[var(--ink-dim)]">{sub}</div>}
     </div>
   );

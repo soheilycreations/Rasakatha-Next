@@ -113,7 +113,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   };
 
   return (
-    <div className="flex min-h-screen bg-[var(--bg)]">
+    <div className="flex h-screen overflow-hidden bg-[var(--bg)]">
       <aside className="flex w-60 shrink-0 flex-col overflow-y-auto border-r border-[var(--border)] bg-sidebar px-4 py-6">
         <div className="mb-8 flex items-center gap-2.5 px-2">
           <Image src={logoLight} alt="Rasakatha.lk" className="logo-light h-8 w-auto" priority />

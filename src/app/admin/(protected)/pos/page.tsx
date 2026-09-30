@@ -391,36 +391,11 @@ export default function AdminPosPage() {
   return (
     <>
     <div className="flex flex-col gap-6 print:hidden">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-[var(--ink)]">Point of Sale</h1>
-          <p className="mt-1 text-[13.5px] text-[var(--ink-faint)]">
-            Bill in-store customers — kept separate from web orders. Search, ↑↓ to pick, Enter to add.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          {clock && (
-            <div className="hidden rounded-xl border border-[var(--border)] bg-card px-3.5 py-2 text-right sm:block">
-              <div className="text-[13px] font-bold tabular-nums text-[var(--ink)]">
-                {clock.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", second: "2-digit" })}
-              </div>
-              <div className="text-[10.5px] text-[var(--ink-faint)]">
-                {clock.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
-              </div>
-            </div>
-          )}
-          <button
-            onClick={() => setShowHeld((v) => !v)}
-            className={`relative rounded-xl border px-3.5 py-2.5 text-[13px] font-bold transition-colors ${
-              heldBills.length > 0 ? "border-accent/40 text-accent hover:bg-accent/[0.06]" : "border-[var(--border)] text-[var(--ink-dim)] hover:bg-[var(--surface-tint)]"
-            }`}
-          >
-            Held Bills
-            {heldBills.length > 0 && (
-              <span className="ml-1.5 rounded-full bg-accent px-1.5 py-0.5 text-[10.5px] text-white">{heldBills.length}</span>
-            )}
-          </button>
-        </div>
+      <div>
+        <h1 className="font-display text-2xl font-bold text-[var(--ink)]">Point of Sale</h1>
+        <p className="mt-1 text-[13.5px] text-[var(--ink-faint)]">
+          Bill in-store customers — kept separate from web orders. Search, ↑↓ to pick, Enter to add.
+        </p>
       </div>
 
       {showHeld && (
@@ -458,8 +433,8 @@ export default function AdminPosPage() {
         </div>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
-        <div className="flex flex-col gap-3">
+      <div className="grid gap-6 lg:h-[calc(100vh-190px)] lg:grid-cols-[1fr_380px] lg:items-stretch">
+        <div className="scrollbar-none flex flex-col gap-3 lg:min-h-0 lg:overflow-y-auto lg:pr-1">
           {pendingBook ? (
             <div className="flex items-center gap-3 rounded-xl border border-accent bg-accent/[0.06] p-3">
               {pendingBook.cover ? (
@@ -510,7 +485,7 @@ export default function AdminPosPage() {
           {searching && <p className="text-[12.5px] text-[var(--ink-faint)]">Searching…</p>}
 
           {!pendingBook && results.length > 0 && (
-            <div className="scrollbar-none flex max-h-[38vh] flex-col gap-1 overflow-y-auto rounded-2xl border border-[var(--border)] bg-card p-2">
+            <div className="flex flex-col gap-1 rounded-2xl border border-[var(--border)] bg-card p-2">
               {results.map((book, i) => {
                 const price = book.onSale && book.salePrice ? book.salePrice : book.regularPrice;
                 const active = i === highlight;
@@ -560,7 +535,7 @@ export default function AdminPosPage() {
                 Search for a book above to start a new bill.
               </div>
             ) : (
-              <div className="scrollbar-none flex max-h-[42vh] flex-col gap-2 overflow-y-auto pr-1">
+              <div className="flex flex-col gap-2">
                 {bill.map((item, idx) => (
                   <div key={item.id} className="flex items-center gap-3 rounded-xl border border-[var(--border)] bg-card p-3">
                     <span className="w-4 shrink-0 text-center text-[11px] font-bold text-[var(--ink-faint)]">{idx + 1}</span>
@@ -618,8 +593,28 @@ export default function AdminPosPage() {
           )}
         </div>
 
-        <div className="sticky top-4 h-fit rounded-2xl border border-[var(--border)] bg-card p-5">
-          <h4 className="mb-4 text-[15px] font-bold text-[var(--ink)]">Checkout</h4>
+        <div className="scrollbar-none flex flex-col rounded-2xl border border-[var(--border)] bg-card p-5 lg:min-h-0 lg:overflow-y-auto">
+          <div className="mb-4 flex items-center justify-between gap-2">
+            <h4 className="text-[15px] font-bold text-[var(--ink)]">Checkout</h4>
+            <div className="flex items-center gap-2">
+              {clock && (
+                <span className="hidden text-[11.5px] font-semibold tabular-nums text-[var(--ink-faint)] sm:inline">
+                  {clock.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+                </span>
+              )}
+              <button
+                onClick={() => setShowHeld((v) => !v)}
+                className={`relative rounded-lg border px-2.5 py-1.5 text-[11.5px] font-bold transition-colors ${
+                  heldBills.length > 0 ? "border-accent/40 text-accent hover:bg-accent/[0.06]" : "border-[var(--border)] text-[var(--ink-dim)] hover:bg-[var(--surface-tint)]"
+                }`}
+              >
+                Held
+                {heldBills.length > 0 && (
+                  <span className="ml-1 rounded-full bg-accent px-1.5 py-0.5 text-[10px] text-white">{heldBills.length}</span>
+                )}
+              </button>
+            </div>
+          </div>
           <div className="flex flex-col gap-2.5">
             <input
               value={customerName}
@@ -676,7 +671,7 @@ export default function AdminPosPage() {
 
           <div className="my-3 flex items-center justify-between rounded-xl bg-[var(--ink)] px-4 py-2.5">
             <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--bg)] opacity-60">Total Due</div>
-            <div className="font-display text-[19px] font-extrabold tabular-nums text-[var(--bg)]">{money(total)}</div>
+            <div className="font-sans text-[20px] font-extrabold tabular-nums text-[var(--bg)]">{money(total)}</div>
           </div>
 
           {payment === "cash" && (
