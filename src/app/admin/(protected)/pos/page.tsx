@@ -593,7 +593,7 @@ export default function AdminPosPage() {
           )}
         </div>
 
-        <div className="rounded-2xl border border-[var(--border)] bg-card p-5">
+        <div className="rounded-2xl border border-[var(--border)] bg-card p-5 lg:sticky lg:top-4 lg:self-start">
           <div className="mb-4 flex items-center justify-between gap-2">
             <h4 className="text-[15px] font-bold text-[var(--ink)]">Checkout</h4>
             <div className="flex items-center gap-2">
