@@ -27,6 +27,10 @@ export default function BookCover({
           fill
           sizes="(max-width: 640px) 45vw, 200px"
           className={`object-cover ${imgClassName}`}
+          // Covers are already served from Supabase Storage behind a CDN with
+          // far-future caching; some are large scanned pages (5-8MB) that can
+          // 500 through Next's on-the-fly image optimizer, so skip it here.
+          unoptimized={cover.startsWith("http")}
         />
         {children}
       </div>
