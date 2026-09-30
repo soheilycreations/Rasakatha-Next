@@ -433,8 +433,8 @@ export default function AdminPosPage() {
         </div>
       )}
 
-      <div className="grid gap-6 lg:h-[calc(100vh-190px)] lg:grid-cols-[1fr_380px] lg:items-stretch">
-        <div className="scrollbar-none flex flex-col gap-3 lg:min-h-0 lg:overflow-y-auto lg:pr-1">
+      <div className="grid gap-6 lg:grid-cols-[1fr_380px] lg:items-start">
+        <div className="scrollbar-none flex flex-col gap-3 lg:h-[calc(100vh-190px)] lg:overflow-y-auto lg:pr-1">
           {pendingBook ? (
             <div className="flex items-center gap-3 rounded-xl border border-accent bg-accent/[0.06] p-3">
               {pendingBook.cover ? (
@@ -593,7 +593,7 @@ export default function AdminPosPage() {
           )}
         </div>
 
-        <div className="scrollbar-none flex flex-col rounded-2xl border border-[var(--border)] bg-card p-5 lg:min-h-0 lg:overflow-y-auto">
+        <div className="rounded-2xl border border-[var(--border)] bg-card p-5">
           <div className="mb-4 flex items-center justify-between gap-2">
             <h4 className="text-[15px] font-bold text-[var(--ink)]">Checkout</h4>
             <div className="flex items-center gap-2">
