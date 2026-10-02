@@ -1,6 +1,7 @@
 import { supabase } from "./server/supabase";
 import { revalidatePath } from "next/cache";
 import { slugify } from "./links";
+import type { BookLanguage } from "./bookMeta";
 import { normalizeText, phoneticKey, tokens } from "./searchText";
 
 export type CatalogBook = {
@@ -19,7 +20,16 @@ export type CatalogBook = {
   weight: number;
   // null = stock isn't tracked for this book
   stockQty: number | null;
+  // optional details (see supabase/book-details.sql)
+  isbn: string | null;
+  pages: number | null;
+  language: BookLanguage | null;
+  publishedYear: number | null;
+  binding: string | null;
+  translator: string | null;
 };
+
+export type { BookLanguage };
 
 type BookRow = {
   id: string;
@@ -36,7 +46,21 @@ type BookRow = {
   cover: string | null;
   weight: number;
   stock_qty?: number | null;
+  isbn?: string | null;
+  pages?: number | null;
+  language?: string | null;
+  published_year?: number | null;
+  binding?: string | null;
+  translator?: string | null;
 };
+
+// Columns added by later migrations. If a migration hasn't been run yet, writes retry without them.
+export const OPTIONAL_COLUMNS = ["stock_qty", "isbn", "pages", "language", "published_year", "binding", "translator"] as const;
+export function withoutOptionalColumns<T extends Record<string, unknown>>(row: T): Omit<T, (typeof OPTIONAL_COLUMNS)[number]> {
+  const copy: Record<string, unknown> = { ...row };
+  for (const c of OPTIONAL_COLUMNS) delete copy[c];
+  return copy as Omit<T, (typeof OPTIONAL_COLUMNS)[number]>;
+}
 
 export function rowToBook(r: BookRow): CatalogBook {
   return {
@@ -54,6 +78,12 @@ export function rowToBook(r: BookRow): CatalogBook {
     cover: r.cover,
     weight: r.weight,
     stockQty: r.stock_qty ?? null,
+    isbn: r.isbn ?? null,
+    pages: r.pages ?? null,
+    language: r.language === "si" || r.language === "en" || r.language === "ta" ? r.language : null,
+    publishedYear: r.published_year ?? null,
+    binding: r.binding ?? null,
+    translator: r.translator ?? null,
   };
 }
 
@@ -78,6 +108,12 @@ export function bookToRow(b: CatalogBook): BookRow {
     cover: b.cover,
     weight: b.weight,
     stock_qty: b.stockQty,
+    isbn: b.isbn,
+    pages: b.pages,
+    language: b.language,
+    published_year: b.publishedYear,
+    binding: b.binding,
+    translator: b.translator,
   };
 }
 

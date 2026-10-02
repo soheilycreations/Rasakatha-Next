@@ -80,6 +80,12 @@ export default async function BookPage({ params }: Props) {
         ...(book.publisher ? { publisher: { "@type": "Organization", name: book.publisher } } : {}),
         genre: book.category,
         sku: book.id,
+        ...(book.isbn ? { isbn: book.isbn } : {}),
+        ...(book.pages ? { numberOfPages: book.pages } : {}),
+        ...(book.language ? { inLanguage: book.language } : {}),
+        ...(book.binding ? { bookFormat: book.binding === "Hardcover" ? "https://schema.org/Hardcover" : "https://schema.org/Paperback" } : {}),
+        ...(book.translator ? { translator: { "@type": "Person", name: book.translator } } : {}),
+        ...(book.publishedYear ? { datePublished: String(book.publishedYear) } : {}),
         brand: { "@type": "Brand", name: book.publisher || SITE.legalName },
         offers: {
           "@type": "Offer",

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { CatalogBook } from "@/lib/catalog";
+import { LANGUAGE_LABELS } from "@/lib/bookMeta";
 import { money, tintForId, discountPercent } from "@/lib/format";
 import { authorHref, categoryHref, ROUTES } from "@/lib/links";
 import { trackViewItem } from "@/lib/analytics";
@@ -62,6 +63,12 @@ export default function ProductView({
     ["Author", <Link key="a" href={authorHref(book.author)} className="text-accent-blue hover:opacity-75">{book.author}</Link>],
     ...(book.publisher ? ([["Publisher", book.publisher]] as [string, React.ReactNode][]) : []),
     ["Category", <Link key="c" href={categoryHref(book.category)} className="text-accent-blue hover:opacity-75">{book.category}</Link>],
+    ...(book.translator ? ([["Translator", book.translator]] as [string, React.ReactNode][]) : []),
+    ...(book.language ? ([["Language", LANGUAGE_LABELS[book.language]]] as [string, React.ReactNode][]) : []),
+    ...(book.pages ? ([["Pages", String(book.pages)]] as [string, React.ReactNode][]) : []),
+    ...(book.binding ? ([["Binding", book.binding]] as [string, React.ReactNode][]) : []),
+    ...(book.publishedYear ? ([["Published", String(book.publishedYear)]] as [string, React.ReactNode][]) : []),
+    ...(book.isbn ? ([["ISBN", book.isbn]] as [string, React.ReactNode][]) : []),
     ...(book.weight ? ([["Weight", `${book.weight} g`]] as [string, React.ReactNode][]) : []),
     ["Availability", book.inStock ? "In stock — ready to ship" : "Currently out of stock"],
   ];

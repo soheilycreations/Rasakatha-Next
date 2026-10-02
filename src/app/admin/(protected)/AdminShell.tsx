@@ -27,6 +27,7 @@ const NAV_GROUPS = [
       { href: "/admin/books", label: "Books", icon: "book" },
       { href: "/admin/authors", label: "Authors", icon: "user" },
       { href: "/admin/categories", label: "Categories", icon: "tag" },
+      { href: "/admin/reviews", label: "Reviews", icon: "star" },
       { href: "/admin/sliders", label: "Hero Sliders", icon: "image" },
     ],
   },
@@ -34,6 +35,7 @@ const NAV_GROUPS = [
 
 function NavIcon({ name, className }: { name: string; className?: string }) {
   const paths: Record<string, React.ReactNode> = {
+    star: <path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9L12 3z" />,
     grid: (
       <>
         <rect x="3" y="3" width="7" height="7" rx="1.5" />

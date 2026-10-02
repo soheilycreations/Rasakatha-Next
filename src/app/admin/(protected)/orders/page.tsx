@@ -50,7 +50,7 @@ export default function AdminOrdersPage() {
       if (statusFilter !== "all" && o.status !== statusFilter) return false;
       if (!q) return true;
       return (
-        o.id.includes(q) ||
+        o.id.toLowerCase().includes(q) ||
         o.customer.name.toLowerCase().includes(q) ||
         o.customer.phone.replace(/\s+/g, "").includes(q.replace(/\s+/g, ""))
       );

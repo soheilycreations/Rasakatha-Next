@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/server/supabase";
 import { currentAccount } from "@/lib/server/customerAuth";
-import { getBookById, invalidateCatalog } from "@/lib/catalog";
+import { getBookById } from "@/lib/catalog";
+import { syncBookRating } from "@/lib/server/reviews";
 import { rateLimit } from "@/lib/server/rateLimit";
 
 type ReviewRow = {
@@ -68,12 +69,7 @@ export async function POST(request: Request) {
   if (error) return NextResponse.json({ error: "Couldn't post your review. Please try again." }, { status: 500 });
 
   // Keep the book's star rating in sync with real reviews.
-  const { data: all } = await supabase().from("reviews").select("rating").eq("book_id", bookId).eq("approved", true);
-  if (all && all.length > 0) {
-    const avg = all.reduce((s, r) => s + Number(r.rating), 0) / all.length;
-    await supabase().from("books").update({ rating: Math.round(avg * 100) / 100 }).eq("id", bookId);
-    invalidateCatalog();
-  }
+  await syncBookRating(bookId);
 
   return NextResponse.json(toReview(data as ReviewRow));
 }

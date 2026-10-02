@@ -1,6 +1,26 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/server/supabase";
-import { bookToRow, invalidateCatalog, rowToBook, type CatalogBook } from "@/lib/catalog";
+import { bookToRow, invalidateCatalog, rowToBook, withoutOptionalColumns, type BookLanguage, type CatalogBook } from "@/lib/catalog";
+
+// Normalises the optional detail fields from the admin form.
+function cleanDetails(b: Partial<CatalogBook>) {
+  const text = (v: unknown, max = 120) => {
+    const s = String(v ?? "").trim().slice(0, max);
+    return s || null;
+  };
+  const int = (v: unknown, min: number, max: number) => {
+    const n = Math.floor(Number(v));
+    return v !== null && v !== "" && v !== undefined && n >= min && n <= max ? n : null;
+  };
+  return {
+    isbn: text(b.isbn, 20),
+    pages: int(b.pages, 1, 20000),
+    language: (["si", "en", "ta"].includes(String(b.language)) ? b.language : null) as BookLanguage | null,
+    publishedYear: int(b.publishedYear, 1400, 2200),
+    binding: text(b.binding, 40),
+    translator: text(b.translator),
+  };
+}
 
 type Row = Parameters<typeof rowToBook>[0];
 
@@ -49,14 +69,13 @@ export async function POST(request: Request) {
     cover: body.cover || null,
     weight: Number(body.weight) || 303,
     stockQty: body.stockQty == null ? null : Math.max(0, Math.floor(Number(body.stockQty)) || 0),
+    ...cleanDetails(body),
   };
 
   let { error } = await supabase().from("books").insert(bookToRow(book));
-  // supabase/stock.sql not run yet: save without the stock column
+  // stock/detail migrations not run yet: save without the optional columns
   if (error && (error.code === "42703" || error.code === "PGRST204")) {
-    const { stock_qty: _omit, ...row } = bookToRow(book);
-    void _omit;
-    ({ error } = await supabase().from("books").insert(row));
+    ({ error } = await supabase().from("books").insert(withoutOptionalColumns(bookToRow(book))));
   }
   if (error) {
     const dup = error.code === "23505";
@@ -74,7 +93,7 @@ export async function PUT(request: Request) {
   const { data: existing } = await supabase().from("books").select("*").eq("id", body.id).maybeSingle();
   if (!existing) return NextResponse.json({ error: "Book not found" }, { status: 404 });
 
-  const merged = { ...rowToBook(existing as Row), ...body };
+  const merged = { ...rowToBook(existing as Row), ...body, ...cleanDetails({ ...rowToBook(existing as Row), ...body }) };
   if (merged.stockQty != null) {
     merged.stockQty = Math.max(0, Math.floor(Number(merged.stockQty)) || 0);
     // keep the in-stock flag consistent with a tracked quantity
@@ -83,9 +102,7 @@ export async function PUT(request: Request) {
   const { id, ...fields } = bookToRow(merged);
   let { error } = await supabase().from("books").update(fields).eq("id", id);
   if (error && (error.code === "42703" || error.code === "PGRST204")) {
-    const { stock_qty: _omit, ...rest } = fields;
-    void _omit;
-    ({ error } = await supabase().from("books").update(rest).eq("id", id));
+    ({ error } = await supabase().from("books").update(withoutOptionalColumns(fields)).eq("id", id));
   }
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   invalidateCatalog();

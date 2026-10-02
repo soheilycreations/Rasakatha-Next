@@ -21,6 +21,12 @@ const emptyForm: Partial<CatalogBook> = {
   cover: "",
   weight: 303,
   stockQty: null,
+  isbn: null,
+  pages: null,
+  language: null,
+  publishedYear: null,
+  binding: null,
+  translator: null,
 };
 
 function BookForm({
@@ -163,6 +169,50 @@ function BookForm({
               value={form.stockQty ?? ""}
               onChange={(e) => set("stockQty", e.target.value === "" ? null : Number(e.target.value))}
             />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <input className={inputClass} placeholder="ISBN" aria-label="ISBN" value={form.isbn ?? ""} onChange={(e) => set("isbn", e.target.value)} />
+            <input className={inputClass} placeholder="Translator" aria-label="Translator" value={form.translator ?? ""} onChange={(e) => set("translator", e.target.value)} />
+            <input
+              className={inputClass}
+              type="number"
+              min={1}
+              placeholder="Pages"
+              aria-label="Pages"
+              value={form.pages ?? ""}
+              onChange={(e) => set("pages", e.target.value === "" ? null : Number(e.target.value))}
+            />
+            <input
+              className={inputClass}
+              type="number"
+              min={1400}
+              max={2200}
+              placeholder="Published year"
+              aria-label="Published year"
+              value={form.publishedYear ?? ""}
+              onChange={(e) => set("publishedYear", e.target.value === "" ? null : Number(e.target.value))}
+            />
+            <select
+              className={inputClass}
+              aria-label="Language"
+              value={form.language ?? ""}
+              onChange={(e) => set("language", (e.target.value || null) as CatalogBook["language"])}
+            >
+              <option value="">Language (not set)</option>
+              <option value="si">Sinhala</option>
+              <option value="en">English</option>
+              <option value="ta">Tamil</option>
+            </select>
+            <select
+              className={inputClass}
+              aria-label="Binding"
+              value={form.binding ?? ""}
+              onChange={(e) => set("binding", e.target.value || null)}
+            >
+              <option value="">Binding (not set)</option>
+              <option value="Paperback">Paperback</option>
+              <option value="Hardcover">Hardcover</option>
+            </select>
           </div>
           <div>
             <div className="mb-1.5 text-[11.5px] font-semibold text-[var(--ink-dim)]">Cover Image</div>
