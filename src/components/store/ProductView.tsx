@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { CatalogBook } from "@/lib/catalog";
 import { money, tintForId, discountPercent } from "@/lib/format";
 import { authorHref, categoryHref, ROUTES } from "@/lib/links";
+import { trackViewItem } from "@/lib/analytics";
 import { triggerFlyToCart } from "@/lib/fly-to-cart";
 import BookCover from "./BookCover";
 import StarRating from "./StarRating";
@@ -52,6 +53,10 @@ export default function ProductView({
 
   const wished = !!store.wish[book.id];
   const price = book.onSale && book.salePrice ? book.salePrice : book.regularPrice;
+
+  useEffect(() => {
+    trackViewItem({ id: book.id, title: book.title, price, category: book.category });
+  }, [book.id, book.title, book.category, price]);
 
   const details: [string, React.ReactNode][] = [
     ["Author", <Link key="a" href={authorHref(book.author)} className="text-accent-blue hover:opacity-75">{book.author}</Link>],

@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { trackBeginCheckout } from "@/lib/analytics";
 import type { CartItem } from "@/lib/cart";
 import { money, tintForId } from "@/lib/format";
 import { SRI_LANKA_LOCATIONS, calculateShippingFee } from "@/lib/shipping";
@@ -143,6 +144,15 @@ export default function CheckoutPage({
       setPlacing(false);
     });
   };
+
+  const hasItems = items.length > 0;
+  useEffect(() => {
+    if (hasItems) {
+      trackBeginCheckout(items.map((x) => ({ id: x.id, title: x.title, price: x.price ?? 0, qty: x.qty })));
+    }
+    // fire once per checkout visit, not on every cart edit
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasItems]);
 
   if (items.length === 0 && !placing) {
     return (

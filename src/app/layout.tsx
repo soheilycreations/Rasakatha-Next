@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { SITE } from "@/lib/site";
+import Analytics from "@/components/Analytics";
 import StoreShell from "@/components/store/StoreShell";
 import { Manrope, Playfair_Display, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
@@ -49,6 +50,8 @@ export const metadata: Metadata = {
   twitter: { card: "summary_large_image" },
   robots: { index: true, follow: true },
   formatDetection: { telephone: false },
+  // Google Search Console HTML-tag verification (NEXT_PUBLIC_GSC_VERIFICATION).
+  verification: process.env.NEXT_PUBLIC_GSC_VERIFICATION ? { google: process.env.NEXT_PUBLIC_GSC_VERIFICATION } : undefined,
 };
 
 export const viewport: Viewport = {
@@ -112,6 +115,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="h-full">
+        <Analytics />
         <div className="grain-overlay" aria-hidden="true" />
         {/* Storefront chrome (sidebar, search, cart) stays mounted across pages. */}
         <StoreShell>{children}</StoreShell>

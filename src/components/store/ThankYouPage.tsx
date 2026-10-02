@@ -1,3 +1,7 @@
+"use client";
+
+import { useEffect } from "react";
+import { trackPurchase } from "@/lib/analytics";
 import type { StoredOrder } from "@/lib/orders";
 import { money, tintForId } from "@/lib/format";
 import BookCover from "./BookCover";
@@ -20,6 +24,14 @@ export default function ThankYouPage({
   onContinueShopping: () => void;
   onTrackOrder: () => void;
 }) {
+  useEffect(() => {
+    trackPurchase(
+      order.id,
+      order.total,
+      order.deliveryFee,
+      order.items.map((x) => ({ id: x.id, title: x.title, price: x.price ?? 0, qty: x.qty }))
+    );
+  }, [order]);
   return (
     <div className="mx-auto max-w-xl py-6 text-center">
       <div className="thankyou-badge mx-auto mb-5 grid h-16 w-16 place-items-center rounded-full bg-accent/[0.12] text-accent">

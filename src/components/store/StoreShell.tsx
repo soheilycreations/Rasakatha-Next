@@ -12,6 +12,7 @@ import Sidebar from "./Sidebar";
 import TopBar from "./TopBar";
 import SearchResults from "./SearchResults";
 import AuthModal from "./AuthModal";
+import { trackAddToCart } from "@/lib/analytics";
 import FlyToCartLayer from "./FlyToCartLayer";
 import { StoreContext, type StoreState } from "./StoreContext";
 import { IconHome, IconCategories, IconHeart, IconCart } from "./icons";
@@ -130,7 +131,13 @@ function StorefrontShell({ children }: { children: React.ReactNode }) {
       },
       cart,
       addToCart,
-      addBookToCart: (book: CatalogBook) =>
+      addBookToCart: (book: CatalogBook) => {
+        trackAddToCart({
+          id: book.id,
+          title: book.title,
+          price: book.onSale && book.salePrice ? book.salePrice : book.regularPrice,
+          category: book.category,
+        });
         addToCart({
           id: book.id,
           title: book.title,
@@ -138,7 +145,8 @@ function StorefrontShell({ children }: { children: React.ReactNode }) {
           cover: book.cover,
           price: book.onSale && book.salePrice ? book.salePrice : book.regularPrice,
           weight: book.weight,
-        }),
+        });
+      },
       removeFromCart: (id) => setCart((c) => c.filter((x) => x.id !== id)),
       changeCartQty: (id, delta) =>
         setCart((c) =>
