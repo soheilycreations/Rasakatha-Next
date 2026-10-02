@@ -113,7 +113,7 @@ export default function SearchBox({
         }
       }}
     >
-      <div className="flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface-tint)] py-[7px] pl-3.5 pr-[7px] backdrop-blur-md sm:pl-[18px] transition-colors focus-within:border-accent/50 focus-within:bg-[var(--surface-tint-strong)]">
+      <div className="flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface-tint)] py-[7px] pl-3.5 pr-[7px] backdrop-blur-md sm:pl-[18px] transition-colors focus-within:border-accent focus-within:bg-[var(--surface-tint-strong)] focus-within:ring-2 focus-within:ring-accent/30">
         <IconSearch className="shrink-0 text-[var(--ink-faint)]" />
         <input
           type="search"
@@ -144,7 +144,7 @@ export default function SearchBox({
             }
           }}
           placeholder="Search books, authors…"
-          className="min-w-0 flex-1 bg-transparent py-1 font-sans text-[15px] text-[var(--ink)] placeholder:text-[var(--ink-faint)] focus:outline-none sm:text-base"
+          className="field-bare min-w-0 flex-1 bg-transparent py-1 font-sans text-[15px] text-[var(--ink)] placeholder:text-[var(--ink-faint)] focus:outline-none sm:text-base"
         />
         {value && (
           <button

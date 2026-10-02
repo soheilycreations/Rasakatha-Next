@@ -387,9 +387,16 @@ body {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
-input:focus-visible,
-textarea:focus-visible,
+/* Form fields: no second square outline. Keyboard focus shows as an accent border plus a soft ring
+   on the field itself. Fields that sit inside a styled wrapper (.field-bare, e.g. the header search
+   pill) draw focus on the wrapper instead. */
+input:not(.field-bare):focus-visible,
+textarea:not(.field-bare):focus-visible,
 select:focus-visible {
-  outline: 2px solid var(--accent) !important;
-  outline-offset: 1px;
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+input.field-bare:focus-visible {
+  outline: none;
 }
