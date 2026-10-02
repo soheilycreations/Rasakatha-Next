@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/server/supabase";
 import { getCatalog, type CatalogBook } from "@/lib/catalog";
-import { displayRating } from "@/lib/format";
 
 export async function GET() {
   const { data: metaRows } = await supabase().from("author_meta").select("*");
@@ -19,7 +18,8 @@ export async function GET() {
     .map(([name, books]) => ({
       name,
       count: books.length,
-      avgRating: books.reduce((s, b) => s + displayRating(b.id, b.rating), 0) / books.length,
+      // real ratings only: books nobody has reviewed count as 0
+      avgRating: books.reduce((s, b) => s + (b.rating || 0), 0) / books.length,
       covers: books.map((b) => b.cover).filter((c): c is string => !!c).slice(0, 3),
       bio: (meta.get(name)?.bio as string) || "",
       photo: (meta.get(name)?.photo as string) || "",

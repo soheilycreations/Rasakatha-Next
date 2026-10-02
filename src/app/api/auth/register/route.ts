@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { authClient, setSessionCookies, toAccount } from "@/lib/server/customerAuth";
+import { rateLimit } from "@/lib/server/rateLimit";
 
 export async function POST(request: Request) {
+  const limited = await rateLimit(request, "customer-register", 6, 3600);
+  if (limited) return limited;
   const { name, email, phone, password } = (await request.json()) as {
     name?: string;
     email?: string;

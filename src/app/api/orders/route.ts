@@ -8,6 +8,7 @@ import type { CartItem } from "@/lib/cart";
 import { decrementStock } from "@/lib/server/stock";
 import { notifyOrderPlaced } from "@/lib/server/notify";
 import { buildPayHereForm, enabledPaymentMethods, type PaymentMethodId } from "@/lib/server/payments";
+import { rateLimit } from "@/lib/server/rateLimit";
 
 const MAX_ID_ATTEMPTS = 5;
 // Readable but not guessable, e.g. RK-7QF3KD. No 0/O/1/I so it survives being read over the phone.
@@ -19,6 +20,8 @@ const KNOWN_TOWNS = new Set(SRI_LANKA_LOCATIONS.flatMap((d) => d.towns));
 const str = (v: unknown, max = 300) => String(v ?? "").trim().slice(0, max);
 
 export async function POST(request: Request) {
+  const limited = await rateLimit(request, "orders", 12, 600);
+  if (limited) return limited;
   const body = await request.json().catch(() => null);
   const rawItems: unknown = body?.items;
   const payment = str(body?.payment, 20);

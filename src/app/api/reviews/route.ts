@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { supabase } from "@/lib/server/supabase";
 import { currentAccount } from "@/lib/server/customerAuth";
 import { getBookById, invalidateCatalog } from "@/lib/catalog";
+import { rateLimit } from "@/lib/server/rateLimit";
 
 type ReviewRow = {
   id: string;
@@ -37,6 +38,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const limited = await rateLimit(request, "reviews", 10, 3600);
+  if (limited) return limited;
   const account = await currentAccount();
   if (!account) return NextResponse.json({ error: "Please sign in to post a review." }, { status: 401 });
 

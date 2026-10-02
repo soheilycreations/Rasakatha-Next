@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { authClient, setSessionCookies, toAccount } from "@/lib/server/customerAuth";
+import { rateLimit } from "@/lib/server/rateLimit";
 
 export async function POST(request: Request) {
+  const limited = await rateLimit(request, "customer-login", 10, 600);
+  if (limited) return limited;
   const { email, password } = (await request.json()) as { email?: string; password?: string };
   const { data, error } = await authClient().auth.signInWithPassword({
     email: (email ?? "").trim().toLowerCase(),

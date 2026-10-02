@@ -2,8 +2,11 @@ import { NextResponse } from "next/server";
 import { supabase } from "@/lib/server/supabase";
 import { rowToOrder, type OrderRow } from "@/lib/server/ordersDb";
 import { normalizePhone as normalize } from "@/lib/phone";
+import { rateLimit } from "@/lib/server/rateLimit";
 
 export async function GET(request: Request) {
+  const limited = await rateLimit(request, "orders-lookup", 30, 600);
+  if (limited) return limited;
   const { searchParams } = new URL(request.url);
   // Readable ids (RK-XXXXXX) are case-insensitive; legacy numeric ids are unaffected.
   const id = (searchParams.get("id") || "").trim().toUpperCase();

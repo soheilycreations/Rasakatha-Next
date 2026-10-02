@@ -18,9 +18,3 @@ export function tintForId(id: string): string {
   return TINTS[hash % TINTS.length];
 }
 
-export function displayRating(id: string, rating: number): number {
-  if (rating > 0) return rating;
-  let hash = 0;
-  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
-  return 3.6 + (hash % 15) / 10;
-}
