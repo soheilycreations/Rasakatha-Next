@@ -28,6 +28,9 @@ const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
       { label: "Delivery & Returns", href: ROUTES.delivery },
       { label: "Order Tracking", href: ROUTES.track },
       { label: "Help Center", href: ROUTES.help },
+      { label: "Privacy Policy", href: ROUTES.privacy },
+      { label: "Terms & Conditions", href: ROUTES.terms },
+      { label: "Refund Policy", href: ROUTES.refund },
     ],
   },
 ];
