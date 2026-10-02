@@ -59,7 +59,7 @@ export default function ProfileView({
           {initials}
         </div>
         <div className="min-w-0 flex-1">
-          <h3 className="font-display truncate text-xl font-bold text-[var(--ink)]">{account.name || "My Profile"}</h3>
+          <h1 className="font-display truncate text-xl font-bold text-[var(--ink)]">{account.name || "My Profile"}</h1>
           <p className="truncate text-[13px] text-[var(--ink-faint)]">{account.email}</p>
         </div>
         <button

@@ -28,9 +28,9 @@ export default function ThankYouPage({
         </svg>
       </div>
 
-      <h3 className="fade-rise font-display text-2xl font-bold text-[var(--ink)]" style={{ animationDelay: "0.25s" }}>
+      <h1 className="fade-rise font-display text-2xl font-bold text-[var(--ink)]" style={{ animationDelay: "0.25s" }}>
         Thank you for your order!
-      </h3>
+      </h1>
       <p className="fade-rise mt-2 text-[14px] text-[var(--ink-dim)]" style={{ animationDelay: "0.35s" }}>
         Your order <span className="font-semibold text-[var(--ink)]">#{order.id}</span> has been placed
         successfully. We&apos;ll send updates to your phone as it&apos;s on its way.

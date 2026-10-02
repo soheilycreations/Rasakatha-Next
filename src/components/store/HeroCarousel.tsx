@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import type { HeroSlide } from "@/lib/hero-slides";
-import type { CartItem } from "@/lib/cart";
+import type { CatalogBook } from "@/lib/catalog";
 import { triggerFlyToCart } from "@/lib/fly-to-cart";
 import { IconCart, IconHeart } from "./icons";
 
@@ -23,14 +23,19 @@ function circularOffset(i: number, active: number, n: number) {
 
 export default function HeroCarousel({
   slides,
+  heroBooks,
   wish,
   onToggleWish,
   onBuy,
+  onOpen,
 }: {
   slides: HeroSlide[];
+  // Slides whose id matches a catalog book sell that book at its real price.
+  heroBooks: Record<string, CatalogBook>;
   wish: Record<string, boolean>;
   onToggleWish: (key: string) => void;
-  onBuy: (item: Omit<CartItem, "qty">) => void;
+  onBuy: (book: CatalogBook) => void;
+  onOpen: (book: CatalogBook) => void;
 }) {
   const [active, setActive] = useState(0);
   const [slideW, setSlideW] = useState(640);
@@ -80,7 +85,9 @@ export default function HeroCarousel({
       return;
     }
     if (!isActive) goTo(i);
+    else if (heroBooks[slides[i].id]) onOpen(heroBooks[slides[i].id]);
   };
+  const activeBook = n > 0 ? heroBooks[slides[active].id] : undefined;
 
   return (
     <div
@@ -89,7 +96,7 @@ export default function HeroCarousel({
       onMouseUp={(e) => endDrag(e.clientX)}
       onTouchStart={(e) => startDrag(e.touches[0].clientX)}
       onTouchEnd={(e) => endDrag(e.changedTouches[0].clientX)}
-      className="relative mx-6 mb-10 touch-pan-y select-none overflow-hidden rounded-[10px] sm:mx-8"
+      className="relative mx-4 mb-8 touch-pan-y select-none overflow-hidden rounded-[10px] sm:mx-8"
       style={{ height: slideH, perspective: 1600 }}
     >
       {slides.map((s, i) => {
@@ -157,18 +164,23 @@ export default function HeroCarousel({
           />
         </button>
 
+        {activeBook && (
         <button
           onClick={(e) => {
             e.stopPropagation();
-            const s = slides[active];
-            triggerFlyToCart({ rect: e.currentTarget.getBoundingClientRect(), imgSrc: s.cover });
-            onBuy({ id: s.id, title: s.title, author: s.author, cover: s.cover, price: s.price });
+            if (!activeBook.inStock) {
+              onOpen(activeBook);
+              return;
+            }
+            triggerFlyToCart({ rect: e.currentTarget.getBoundingClientRect(), imgSrc: activeBook.cover });
+            onBuy(activeBook);
           }}
-          className="pointer-events-auto absolute bottom-5 right-4 flex items-center gap-2 rounded-full bg-accent px-4 py-2.5 text-[13px] font-bold text-white shadow-[0_10px_24px_-8px_rgba(239,66,56,0.7)] transition-transform hover:scale-105 active:scale-95 sm:bottom-6 sm:right-6 sm:px-5 sm:py-3 sm:text-sm"
+          className="pointer-events-auto absolute bottom-5 right-4 flex items-center gap-2 rounded-full bg-accent px-4 py-2.5 text-[13px] font-bold text-white shadow-[0_10px_24px_-8px_rgba(239,66,56,0.7)] transition-transform hover:scale-105 active:scale-95 sm:bottom-6 sm:right-6 sm:px-5 sm:py-3 sm:text-sm max-sm:bottom-auto max-sm:left-4 max-sm:right-auto max-sm:top-4 max-sm:px-3"
         >
           <IconCart className="h-4 w-4" />
-          Add to Cart
+          <span className="max-sm:sr-only">{activeBook.inStock ? "Add to Cart" : "View Book"}</span>
         </button>
+        )}
       </div>
 
       <div className="pointer-events-none absolute inset-y-0 left-0 z-20 w-16 bg-gradient-to-r from-panel via-panel/70 to-transparent sm:w-24" />

@@ -50,6 +50,7 @@ function LocationSelect({
   return (
     <select
       value={value}
+      aria-label="Delivery city or town"
       onChange={(e) => onChange(e.target.value)}
       className={`w-full rounded-xl border bg-[var(--surface-tint)] px-3.5 py-2.5 text-[14px] text-[var(--ink)] focus:outline-none focus:border-accent/50 transition-colors ${
         hasError ? "border-accent" : "border-[var(--border)]"
@@ -79,7 +80,7 @@ export default function CheckoutPage({
 }: {
   account: Account | null;
   items: CartItem[];
-  onPlaceOrder: (payment: string, deliveryFee: number, customer: Customer) => void;
+  onPlaceOrder: (payment: string, customer: Customer) => Promise<void>;
   onBack: () => void;
 }) {
   const [name, setName] = useState(account?.name ?? "");
@@ -95,6 +96,7 @@ export default function CheckoutPage({
   const [payment, setPayment] = useState("cod");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [placing, setPlacing] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   const subtotal = items.reduce((sum, x) => sum + (x.price ?? 0) * x.qty, 0);
   const totalWeight = items.reduce((sum, x) => sum + (x.weight ?? DEFAULT_ITEM_WEIGHT) * x.qty, 0);
@@ -111,11 +113,13 @@ export default function CheckoutPage({
     if (!email.trim()) nextErrors.email = "Enter your email address";
     else if (!/^\S+@\S+\.\S+$/.test(email)) nextErrors.email = "Enter a valid email address";
     if (!phone.trim()) nextErrors.phone = "Enter a contact number";
+    else if (phone.replace(/\D/g, "").length < 9) nextErrors.phone = "Enter a valid phone number (e.g. 077 123 4567)";
     if (!city) nextErrors.city = "Select your city";
     if (!address.trim()) nextErrors.address = "Enter your address";
     if (isGift) {
       if (!giftName.trim()) nextErrors.giftName = "Enter recipient's name";
       if (!giftPhone.trim()) nextErrors.giftPhone = "Enter recipient's phone number";
+      else if (giftPhone.replace(/\D/g, "").length < 9) nextErrors.giftPhone = "Enter a valid phone number";
       if (!giftAddress.trim()) nextErrors.giftAddress = "Enter recipient's delivery address";
       if (!giftCity) nextErrors.giftCity = "Select recipient's city";
     }
@@ -133,8 +137,24 @@ export default function CheckoutPage({
     };
 
     setPlacing(true);
-    setTimeout(() => onPlaceOrder(payment, deliveryFee, customer), 500);
+    setSubmitError("");
+    onPlaceOrder(payment, customer).catch((err: unknown) => {
+      setSubmitError(err instanceof Error ? err.message : "We couldn't place your order. Please try again.");
+      setPlacing(false);
+    });
   };
+
+  if (items.length === 0 && !placing) {
+    return (
+      <div className="py-16 text-center">
+        <h1 className="font-display text-xl font-bold text-[var(--ink)]">Your cart is empty</h1>
+        <p className="mt-2 text-[13.5px] text-[var(--ink-faint)]">Add a few books and come back to check out.</p>
+        <button onClick={onBack} className="btn-accent mt-5 rounded-full px-6 py-3 text-[13.5px] font-bold text-white">
+          Back to cart
+        </button>
+      </div>
+    );
+  }
 
   const inputClass =
     "w-full rounded-xl border bg-[var(--surface-tint)] px-3.5 py-2.5 text-[14px] text-[var(--ink)] placeholder:text-[var(--ink-faint)] focus:outline-none focus:border-accent/50 transition-colors";
@@ -148,7 +168,7 @@ export default function CheckoutPage({
         ← Back to Cart
       </button>
 
-      <h3 className="font-display mb-6 text-xl font-bold text-[var(--ink)]">Checkout</h3>
+      <h1 className="font-display mb-6 text-xl font-bold text-[var(--ink)]">Checkout</h1>
 
       <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
         <div className="flex flex-col gap-6">
@@ -163,6 +183,8 @@ export default function CheckoutPage({
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Full name"
+                  aria-label="Full name"
+                  autoComplete="name"
                   className={`${inputClass} ${errors.name ? "border-accent" : "border-[var(--border)]"}`}
                 />
                 {errors.name && <p className="mt-1 text-[11.5px] text-accent">{errors.name}</p>}
@@ -171,7 +193,11 @@ export default function CheckoutPage({
                 <input
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  placeholder="Phone number"
+                  placeholder="Phone number (e.g. 077 123 4567)"
+                  aria-label="Phone number"
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
                   className={`${inputClass} ${errors.phone ? "border-accent" : "border-[var(--border)]"}`}
                 />
                 {errors.phone && <p className="mt-1 text-[11.5px] text-accent">{errors.phone}</p>}
@@ -181,6 +207,8 @@ export default function CheckoutPage({
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Email address"
+                  aria-label="Email address"
+                  autoComplete="email"
                   type="email"
                   className={`${inputClass} ${errors.email ? "border-accent" : "border-[var(--border)]"}`}
                 />
@@ -199,6 +227,8 @@ export default function CheckoutPage({
                 <textarea
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
+                  aria-label="Address"
+                  autoComplete="street-address"
                   placeholder={isGift ? "Your address (for billing / contact purposes)" : "Delivery address"}
                   rows={isGift ? 2 : 3}
                   className={`${inputClass} resize-none ${errors.address ? "border-accent" : "border-[var(--border)]"}`}
@@ -235,6 +265,7 @@ export default function CheckoutPage({
                   <input
                     value={giftName}
                     onChange={(e) => setGiftName(e.target.value)}
+                    aria-label="Recipient's full name"
                     placeholder="Recipient's full name"
                     className={`${inputClass} ${errors.giftName ? "border-accent" : "border-[var(--border)]"}`}
                   />
@@ -244,6 +275,9 @@ export default function CheckoutPage({
                   <input
                     value={giftPhone}
                     onChange={(e) => setGiftPhone(e.target.value)}
+                    aria-label="Recipient's phone number"
+                    type="tel"
+                    inputMode="tel"
                     placeholder="Recipient's phone number"
                     className={`${inputClass} ${errors.giftPhone ? "border-accent" : "border-[var(--border)]"}`}
                   />
@@ -257,6 +291,7 @@ export default function CheckoutPage({
                   <textarea
                     value={giftAddress}
                     onChange={(e) => setGiftAddress(e.target.value)}
+                    aria-label="Recipient's delivery address"
                     placeholder="Recipient's delivery address"
                     rows={3}
                     className={`${inputClass} resize-none ${errors.giftAddress ? "border-accent" : "border-[var(--border)]"}`}
@@ -371,8 +406,13 @@ export default function CheckoutPage({
             disabled={placing}
             className="btn-accent mt-5 flex w-full items-center justify-center gap-2 rounded-full py-3.5 text-[13.5px] font-bold text-white disabled:opacity-60"
           >
-            {placing ? "Placing Order…" : "Place Order"}
+            {placing ? "Placing Order…" : `Place Order · ${money(total)}`}
           </button>
+          {submitError && (
+            <p role="alert" className="mt-3 rounded-xl border border-accent/40 bg-accent/[0.08] px-3 py-2 text-[12.5px] text-accent">
+              {submitError}
+            </p>
+          )}
         </div>
       </div>
     </div>

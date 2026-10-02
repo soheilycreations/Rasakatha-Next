@@ -1,5 +1,6 @@
 import { supabase } from "./server/supabase";
-import { displayRating } from "./format";
+import { revalidatePath } from "next/cache";
+import { slugify } from "./links";
 
 export type CatalogBook = {
   id: string;
@@ -51,6 +52,11 @@ export function rowToBook(r: BookRow): CatalogBook {
   };
 }
 
+// Card lists never show the blurb — drop it so pages ship less data.
+export function forCards(items: CatalogBook[]): CatalogBook[] {
+  return items.map((b) => (b.blurb ? { ...b, blurb: "" } : b));
+}
+
 export function bookToRow(b: CatalogBook): BookRow {
   return {
     id: b.id,
@@ -78,6 +84,12 @@ let inflight: Promise<CatalogBook[]> | null = null;
 
 export function invalidateCatalog() {
   cache = null;
+  // Also refresh the statically cached store pages (home, book, category…).
+  try {
+    revalidatePath("/", "layout");
+  } catch {
+    // called outside a request (e.g. a script) — nothing cached to refresh
+  }
 }
 
 async function fetchAll(): Promise<CatalogBook[]> {
@@ -130,20 +142,46 @@ export async function getCategories(): Promise<{ name: string; count: number; co
     .sort((a, b) => b.count - a.count);
 }
 
+// Customers shouldn't have to page past sold-out titles to find something
+// they can buy: in-stock books first, newest first within each group.
+export function inStockFirst(items: CatalogBook[]): CatalogBook[] {
+  return [...items].sort(
+    (a, b) => Number(b.inStock) - Number(a.inStock) || Number(b.id) - Number(a.id)
+  );
+}
+
 export async function searchCatalog(query: string): Promise<CatalogBook[]> {
   const q = query.trim().toLowerCase();
   if (!q) return [];
   const catalog = await getCatalog();
-  return catalog.filter((b) => b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q));
+  return inStockFirst(
+    catalog.filter(
+      (b) =>
+        b.title.toLowerCase().includes(q) ||
+        b.author.toLowerCase().includes(q) ||
+        (b.publisher ?? "").toLowerCase().includes(q)
+    )
+  );
 }
 
 export async function getByCategory(category: string): Promise<CatalogBook[]> {
-  return (await getCatalog()).filter((b) => b.category === category);
+  return inStockFirst((await getCatalog()).filter((b) => b.category === category));
 }
 
 export async function getByPublisher(publisher: string): Promise<CatalogBook[]> {
   const q = publisher.toLowerCase();
-  return (await getCatalog()).filter((b) => b.publisher?.toLowerCase().includes(q));
+  return inStockFirst((await getCatalog()).filter((b) => b.publisher?.toLowerCase().includes(q)));
+}
+
+export async function getBookById(id: string): Promise<CatalogBook | null> {
+  return (await getCatalog()).find((b) => b.id === id) ?? null;
+}
+
+export async function getCategoryBySlug(slug: string): Promise<string | null> {
+  const decoded = decodeURIComponent(slug);
+  const categories = await getCategories();
+  const match = categories.find((c) => slugify(c.name) === decoded || c.name === decoded);
+  return match?.name ?? null;
 }
 
 export async function getByIds(ids: string[]): Promise<CatalogBook[]> {
@@ -167,7 +205,7 @@ export async function getTopAuthors(limit: number): Promise<AuthorSummary[]> {
   return [...byAuthor.entries()]
     .map(([name, books]) => {
       const avgRating =
-        books.reduce((sum, b) => sum + displayRating(b.id, b.rating), 0) / books.length;
+        books.reduce((sum, b) => sum + (b.rating || 0), 0) / books.length;
       const covers = books.map((b) => b.cover).filter((c): c is string => !!c).slice(0, 3);
       return { name, count: books.length, avgRating, covers };
     })
@@ -177,7 +215,7 @@ export async function getTopAuthors(limit: number): Promise<AuthorSummary[]> {
 }
 
 export async function getByAuthor(name: string): Promise<CatalogBook[]> {
-  return (await getCatalog()).filter((b) => b.author === name);
+  return inStockFirst((await getCatalog()).filter((b) => b.author === name));
 }
 
 export async function getNewest(limit: number): Promise<CatalogBook[]> {
@@ -190,6 +228,20 @@ export async function getNewest(limit: number): Promise<CatalogBook[]> {
 export async function getOnSale(limit?: number): Promise<CatalogBook[]> {
   const items = (await getCatalog()).filter((b) => b.onSale && b.inStock);
   return limit ? items.slice(0, limit) : items;
+}
+
+export type ListOrder = "recommended" | "price_asc" | "price_desc" | "newest";
+
+export function effectivePrice(b: CatalogBook): number {
+  return b.onSale && b.salePrice ? b.salePrice : b.regularPrice;
+}
+
+export function applyListOptions(items: CatalogBook[], order: string | null, inStockOnly: boolean): CatalogBook[] {
+  let out = inStockOnly ? items.filter((b) => b.inStock) : items;
+  if (order === "price_asc") out = [...out].sort((a, b) => effectivePrice(a) - effectivePrice(b));
+  else if (order === "price_desc") out = [...out].sort((a, b) => effectivePrice(b) - effectivePrice(a));
+  else if (order === "newest") out = [...out].sort((a, b) => Number(b.id) - Number(a.id));
+  return out;
 }
 
 export function paginate<T>(items: T[], page: number, limit: number) {

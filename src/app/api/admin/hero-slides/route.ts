@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { supabase } from "@/lib/server/supabase";
 import { getHeroSlides, rowToSlide } from "@/lib/server/heroSlides";
 import type { HeroSlide } from "@/lib/hero-slides";
@@ -30,6 +31,7 @@ export async function POST(request: Request) {
     .select()
     .single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  revalidatePath("/");
   return NextResponse.json(rowToSlide(data));
 }
 
@@ -48,6 +50,7 @@ export async function PUT(request: Request) {
     .maybeSingle();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!data) return NextResponse.json({ error: "Slide not found" }, { status: 404 });
+  revalidatePath("/");
   return NextResponse.json(rowToSlide(data));
 }
 
@@ -57,5 +60,6 @@ export async function DELETE(request: Request) {
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
   const { error } = await supabase().from("hero_slides").delete().eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  revalidatePath("/");
   return NextResponse.json({ ok: true });
 }

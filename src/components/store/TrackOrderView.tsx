@@ -44,7 +44,7 @@ export default function TrackOrderView({ initialOrder }: { initialOrder?: Stored
           <IconTruck className="h-5 w-5" />
         </div>
         <div>
-          <h3 className="font-display text-xl font-bold text-[var(--ink)]">Track Your Order</h3>
+          <h1 className="font-display text-xl font-bold text-[var(--ink)]">Track Your Order</h1>
           <p className="text-[13px] text-[var(--ink-faint)]">Enter your order ID and phone number to check its status.</p>
         </div>
       </div>

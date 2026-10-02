@@ -8,7 +8,7 @@ const STATS = [
 
 export default function AboutBanner() {
   return (
-    <section className="mb-10 px-6 sm:px-8">
+    <section className="mb-10 px-4 sm:px-8">
       <div
         className="relative overflow-hidden rounded-[24px] border border-[var(--border)] px-6 py-10 shadow-[0_22px_50px_-24px_rgba(0,0,0,0.45)] sm:px-12 sm:py-14"
         style={{
@@ -31,9 +31,9 @@ export default function AboutBanner() {
               <span className="h-[2px] w-6 rounded-full bg-accent" />
               <span className="text-xs font-bold uppercase tracking-[0.16em] text-accent">Our Story</span>
             </div>
-            <h3 className="font-display mt-3 text-[26px] font-bold leading-[1.15] text-[var(--ink)] sm:text-[32px]">
+            <h2 className="font-display mt-3 text-[26px] font-bold leading-[1.15] text-[var(--ink)] sm:text-[32px]">
               Sri Lanka&apos;s home for stories worth telling
-            </h3>
+            </h2>
             <p className="mt-4 max-w-md text-[14px] leading-relaxed text-[var(--ink-dim)]">
               From timeless Sinhala classics to bold new voices, Rasakatha Publishers curates every
               title with care — bringing great reading to doorsteps across the island since day one.

@@ -1,7 +1,6 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
+import { categoryHref } from "@/lib/links";
 
 type Category = { name: string; count: number; covers: string[] };
 
@@ -28,25 +27,18 @@ const FAN = [
   { rotate: 10, x: 30, z: 2 },
 ];
 
-export default function CategoryTiles({ onSelect }: { onSelect: (name: string) => void }) {
-  const [categories, setCategories] = useState<Category[]>([]);
-
-  useEffect(() => {
-    fetch("/api/categories")
-      .then((r) => r.json())
-      .then((data: Category[]) => setCategories(data.slice(0, 8)));
-  }, []);
-
+export default function CategoryTiles({ categories: all }: { categories: Category[] }) {
+  const categories = all.slice(0, 8);
   if (categories.length === 0) return null;
 
   return (
-    <section className="mb-10 px-6 sm:px-8">
-      <h3 className="font-display mb-3.5 text-lg font-bold text-[var(--ink)] sm:text-xl">Browse by Genre</h3>
+    <section className="mb-10 px-4 sm:px-8">
+      <h2 className="font-display mb-3.5 text-lg font-bold text-[var(--ink)] sm:text-xl">Browse by Genre</h2>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
         {categories.map((c) => (
-          <button
+          <Link
             key={c.name}
-            onClick={() => onSelect(c.name)}
+            href={categoryHref(c.name)}
             className="tile-hover group relative flex h-[168px] flex-col overflow-hidden rounded-2xl border border-white/[0.08] text-left shadow-[0_8px_20px_rgba(0,0,0,0.4)] hover:shadow-[0_18px_38px_rgba(0,0,0,0.6)] sm:h-[184px]"
             style={{ background: gradientFor(c.name) }}
           >
@@ -72,7 +64,7 @@ export default function CategoryTiles({ onSelect }: { onSelect: (name: string) =
               <span className="block text-sm font-bold text-white sm:text-base">{c.name}</span>
               <span className="text-[11px] text-white/65">{c.count} books</span>
             </div>
-          </button>
+          </Link>
         ))}
       </div>
     </section>

@@ -1,99 +1,64 @@
+"use client";
+
 import type { CatalogBook } from "@/lib/catalog";
-import type { CartItem } from "@/lib/cart";
 import type { HeroSlide } from "@/lib/hero-slides";
 import HeroCarousel from "./HeroCarousel";
 import CategoryTiles from "./CategoryTiles";
 import HomeRow from "./HomeRow";
 import AboutBanner from "./AboutBanner";
+import TrustStrip from "./TrustStrip";
 import Footer from "./Footer";
+import { useCardHandlers, useStore } from "./StoreContext";
+
+export type HomeRowData = { title: string; items: CatalogBook[]; viewAllHref?: string };
 
 export default function HomeView({
   slides,
-  wish,
-  onToggleWish,
-  onAdd,
-  onOpen,
-  onBuyHero,
-  onSelectCategory,
-  onTrackOrder,
+  heroBooks,
+  rowsBeforeGenres,
+  rowsAfterAbout,
+  categories,
 }: {
   slides: HeroSlide[];
-  wish: Record<string, boolean>;
-  onToggleWish: (id: string) => void;
-  onAdd: (book: CatalogBook) => void;
-  onOpen: (book: CatalogBook) => void;
-  onBuyHero: (item: Omit<CartItem, "qty">) => void;
-  onSelectCategory: (name: string) => void;
-  onTrackOrder: () => void;
+  heroBooks: Record<string, CatalogBook>;
+  rowsBeforeGenres: HomeRowData[];
+  rowsAfterAbout: HomeRowData[];
+  categories: { name: string; count: number; covers: string[] }[];
 }) {
+  const store = useStore();
+  const handlers = useCardHandlers();
+
   return (
     <div className="pt-4">
+      {/* One H1 per page for search engines; visually the hero carries the page. */}
+      <h1 className="sr-only">Rasakatha.lk — buy Sinhala and English books online in Sri Lanka</h1>
+
       {slides.length > 0 && (
-        <HeroCarousel slides={slides} wish={wish} onToggleWish={onToggleWish} onBuy={onBuyHero} />
+        <HeroCarousel
+          slides={slides}
+          heroBooks={heroBooks}
+          wish={store.wish}
+          onToggleWish={store.toggleWish}
+          onBuy={store.addBookToCart}
+          onOpen={store.openBook}
+        />
       )}
 
-      <HomeRow
-        title="From Rasakatha Publishers"
-        fetchUrl="/api/books?publisher=RasaKatha&limit=16"
-        wish={wish}
-        onToggleWish={onToggleWish}
-        onAdd={onAdd}
-        onOpen={onOpen}
-      />
+      <TrustStrip />
 
-      <HomeRow
-        title="New Arrivals"
-        fetchUrl="/api/books?sort=new&limit=16"
-        wish={wish}
-        onToggleWish={onToggleWish}
-        onAdd={onAdd}
-        onOpen={onOpen}
-      />
+      {rowsBeforeGenres.map((row) => (
+        <HomeRow key={row.title} title={row.title} initialItems={row.items} viewAllHref={row.viewAllHref} {...handlers} />
+      ))}
 
-      <CategoryTiles onSelect={onSelectCategory} />
+      <CategoryTiles categories={categories} />
 
       <AboutBanner />
 
-      <HomeRow
-        title="Books on Sale"
-        fetchUrl="/api/books?category=__sale__&limit=16"
-        wish={wish}
-        onToggleWish={onToggleWish}
-        onAdd={onAdd}
-        onOpen={onOpen}
-      />
+      {rowsAfterAbout.map((row) => (
+        <HomeRow key={row.title} title={row.title} initialItems={row.items} viewAllHref={row.viewAllHref} {...handlers} />
+      ))}
 
-      <HomeRow
-        title="Novels"
-        fetchUrl="/api/books?category=Novel&limit=16"
-        wish={wish}
-        onToggleWish={onToggleWish}
-        onAdd={onAdd}
-        onOpen={onOpen}
-        onViewAll={() => onSelectCategory("Novel")}
-      />
-
-      <HomeRow
-        title="Poetry Collection"
-        fetchUrl="/api/books?category=Poetry&limit=16"
-        wish={wish}
-        onToggleWish={onToggleWish}
-        onAdd={onAdd}
-        onOpen={onOpen}
-        onViewAll={() => onSelectCategory("Poetry")}
-      />
-
-      <HomeRow
-        title="Children's Books"
-        fetchUrl="/api/books?category=Children&limit=16"
-        wish={wish}
-        onToggleWish={onToggleWish}
-        onAdd={onAdd}
-        onOpen={onOpen}
-        onViewAll={() => onSelectCategory("Children")}
-      />
-
-      <Footer onTrackOrder={onTrackOrder} />
+      <Footer />
     </div>
   );
 }

@@ -1,4 +1,6 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+import { SITE } from "@/lib/site";
+import StoreShell from "@/components/store/StoreShell";
 import { Manrope, Playfair_Display, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -22,9 +24,67 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Rasakatha.lk | Rasakatha Publishers Bookstore",
-  description:
-    "Rasakatha Publishers' online bookstore — discover new arrivals, bestsellers and sale titles from Sri Lankan and international authors.",
+  metadataBase: new URL(SITE.url),
+  title: {
+    default: "Rasakatha.lk | Buy Sinhala & English Books Online in Sri Lanka",
+    template: "%s | Rasakatha.lk",
+  },
+  description: SITE.description,
+  applicationName: SITE.name,
+  keywords: [
+    "Sinhala books",
+    "buy books online Sri Lanka",
+    "Sinhala novels",
+    "Rasakatha Publishers",
+    "Sinhala translations",
+    "online bookstore Sri Lanka",
+  ],
+  openGraph: {
+    type: "website",
+    siteName: SITE.name,
+    locale: "en_LK",
+    title: "Rasakatha.lk | Buy Sinhala & English Books Online in Sri Lanka",
+    description: SITE.description,
+  },
+  twitter: { card: "summary_large_image" },
+  robots: { index: true, follow: true },
+  formatDetection: { telephone: false },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#12141a" },
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+  ],
+};
+
+const ORG_JSON_LD = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": ["Organization", "BookStore"],
+      "@id": `${SITE.url}/#org`,
+      name: SITE.legalName,
+      alternateName: SITE.name,
+      url: SITE.url,
+      logo: `${SITE.url}/icon.png`,
+      telephone: SITE.phoneIntl,
+      email: SITE.email,
+      address: { "@type": "PostalAddress", streetAddress: SITE.address, addressCountry: "LK" },
+      sameAs: Object.values(SITE.social).filter(Boolean),
+    },
+    {
+      "@type": "WebSite",
+      "@id": `${SITE.url}/#website`,
+      url: SITE.url,
+      name: SITE.name,
+      publisher: { "@id": `${SITE.url}/#org` },
+      inLanguage: ["si", "en"],
+    },
+  ],
 };
 
 const THEME_INIT_SCRIPT = `
@@ -37,7 +97,7 @@ const THEME_INIT_SCRIPT = `
 })();
 `;
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
       lang="en"
@@ -46,10 +106,15 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(ORG_JSON_LD).replace(/</g, "\\u003c") }}
+        />
       </head>
       <body className="h-full">
         <div className="grain-overlay" aria-hidden="true" />
-        {children}
+        {/* Storefront chrome (sidebar, search, cart) stays mounted across pages. */}
+        <StoreShell>{children}</StoreShell>
       </body>
     </html>
   );

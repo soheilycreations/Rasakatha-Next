@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { CartItem } from "@/lib/cart";
 import type { Account } from "@/lib/account";
-import { IconSearch, IconFilter, IconCart, IconHeart } from "./icons";
+import { IconSearch, IconCart, IconHeart } from "./icons";
 import ThemeToggle from "./ThemeToggle";
 import CartPopover from "./CartPopover";
 
@@ -48,7 +48,7 @@ export default function TopBar({
   }, [cartOpen]);
 
   return (
-    <header className="relative z-30 flex items-center gap-4 border-b border-[var(--border)] px-4 pb-4 pt-6 shadow-[0_12px_24px_-12px_rgba(0,0,0,0.25)] sm:px-8">
+    <header className="relative z-30 flex items-center sm:gap-4 border-b border-[var(--border)] gap-2.5 px-4 pb-3 pt-4 shadow-[0_12px_24px_-12px_rgba(0,0,0,0.25)] sm:px-8 sm:pb-4 sm:pt-6">
       <button
         onClick={onMenuClick}
         className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-[var(--border)] bg-[var(--surface-tint)] text-[var(--ink-dim)] md:hidden"
@@ -64,19 +64,34 @@ export default function TopBar({
       <div className="flex min-w-0 max-w-[640px] flex-[3] items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface-tint)] py-[7px] pl-[18px] pr-[7px] backdrop-blur-md transition-colors focus-within:border-accent/50 focus-within:bg-[var(--surface-tint-strong)]">
         <IconSearch className="shrink-0 text-[var(--ink-faint)]" />
         <input
+          type="search"
+          enterKeyHint="search"
+          aria-label="Search books and authors"
           value={query}
           onChange={(e) => onQueryChange(e.target.value)}
-          placeholder="Search for books, authors..."
+          onKeyDown={(e) => {
+            if (e.key === "Escape") onQueryChange("");
+          }}
+          placeholder="Search books, authors…"
           className="min-w-0 flex-1 bg-transparent py-1 font-sans text-[15px] text-[var(--ink)] placeholder:text-[var(--ink-faint)] focus:outline-none sm:text-base"
         />
-        <button className="hidden h-[34px] w-[34px] shrink-0 place-items-center rounded-full bg-[var(--surface-tint-strong)] text-[var(--ink-dim)] transition-colors hover:bg-accent/[0.22] hover:text-white sm:grid">
-          <IconFilter />
-        </button>
+        {query && (
+          <button
+            type="button"
+            onClick={() => onQueryChange("")}
+            aria-label="Clear search"
+            className="grid h-[30px] w-[30px] shrink-0 place-items-center rounded-full bg-[var(--surface-tint-strong)] text-[15px] leading-none text-[var(--ink-dim)] transition-colors hover:text-[var(--ink)]"
+          >
+            ×
+          </button>
+        )}
       </div>
 
       <div className="flex-1" />
 
-      <ThemeToggle />
+      <div className="hidden sm:block">
+        <ThemeToggle />
+      </div>
 
       <button
         onClick={onOpenLibrary}

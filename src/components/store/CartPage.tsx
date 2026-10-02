@@ -25,7 +25,7 @@ export default function CartPage({
           <IconCart className="h-7 w-7 text-[var(--ink-faint)]" />
         </div>
         <div>
-          <h3 className="font-display text-lg font-bold text-[var(--ink)]">Your cart is empty</h3>
+          <h1 className="font-display text-lg font-bold text-[var(--ink)]">Your cart is empty</h1>
           <p className="mt-1 text-[13.5px] text-[var(--ink-faint)]">
             Looks like you haven&apos;t added any books yet.
           </p>
@@ -39,9 +39,9 @@ export default function CartPage({
 
   return (
     <div>
-      <h3 className="font-display mb-6 text-xl font-bold text-[var(--ink)]">
+      <h1 className="font-display mb-6 text-xl font-bold text-[var(--ink)]">
         Your Cart <span className="font-sans text-sm font-normal text-[var(--ink-faint)]">({items.length} items)</span>
-      </h3>
+      </h1>
 
       <div className="grid gap-8 lg:grid-cols-[1fr_340px]">
         <div className="flex flex-col gap-3">

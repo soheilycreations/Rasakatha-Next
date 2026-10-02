@@ -3,11 +3,11 @@
 import { useState } from "react";
 import { IconShare, IconLink } from "./icons";
 
-export default function ShareButtons({ title }: { title: string }) {
+export default function ShareButtons({ title, url: canonicalUrl }: { title: string; url?: string }) {
   const [copied, setCopied] = useState(false);
 
   const share = (kind: "whatsapp" | "facebook" | "x") => {
-    const url = typeof window !== "undefined" ? window.location.href : "";
+    const url = canonicalUrl || (typeof window !== "undefined" ? window.location.href : "");
     const text = `${title} — Rasakatha.lk`;
     const links = {
       whatsapp: `https://wa.me/?text=${encodeURIComponent(text + " " + url)}`,
@@ -19,7 +19,7 @@ export default function ShareButtons({ title }: { title: string }) {
 
   const copyLink = async () => {
     try {
-      await navigator.clipboard.writeText(window.location.href);
+      await navigator.clipboard.writeText(canonicalUrl || window.location.href);
       setCopied(true);
       setTimeout(() => setCopied(false), 1800);
     } catch {
@@ -28,7 +28,7 @@ export default function ShareButtons({ title }: { title: string }) {
   };
 
   const buttons: { key: "whatsapp" | "facebook" | "x"; label: string; bg: string }[] = [
-    { key: "whatsapp", label: "W", bg: "#25D366" },
+    { key: "whatsapp", label: "WA", bg: "#25D366" },
     { key: "facebook", label: "f", bg: "#1877F2" },
     { key: "x", label: "X", bg: "#111111" },
   ];
@@ -43,7 +43,7 @@ export default function ShareButtons({ title }: { title: string }) {
         <button
           key={b.key}
           onClick={() => share(b.key)}
-          aria-label={`Share on ${b.key}`}
+          aria-label={`Share on ${b.key === "x" ? "X" : b.key[0].toUpperCase() + b.key.slice(1)}`}
           className="grid h-8 w-8 place-items-center rounded-full text-[12.5px] font-bold text-white transition-transform hover:scale-110"
           style={{ background: b.bg }}
         >

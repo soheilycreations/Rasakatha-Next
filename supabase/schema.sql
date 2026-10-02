@@ -72,6 +72,19 @@ create index if not exists pos_sales_created_at_idx on pos_sales (created_at des
 alter table pos_sales add column if not exists customer_phone text;
 alter table pos_sales add column if not exists customer_email text;
 
+create table if not exists reviews (
+  id uuid primary key default gen_random_uuid(),
+  book_id text not null references books(id) on delete cascade,
+  user_id uuid not null,
+  name text not null,
+  rating integer not null check (rating between 1 and 5),
+  text text not null,
+  approved boolean not null default true,
+  created_at timestamptz not null default now(),
+  unique (book_id, user_id)
+);
+create index if not exists reviews_book_idx on reviews (book_id, created_at desc);
+
 -- All access goes through the server with the service-role key, which bypasses
 -- RLS. Enabling RLS with no policies blocks the public anon key entirely.
 alter table books enable row level security;
@@ -80,3 +93,4 @@ alter table hero_slides enable row level security;
 alter table author_meta enable row level security;
 alter table category_meta enable row level security;
 alter table pos_sales enable row level security;
+alter table reviews enable row level security;

@@ -36,7 +36,7 @@ export default function LibraryView({
 
   return (
     <div>
-      <h3 className="font-display mb-4 text-xl font-bold text-[var(--ink)]">My Library</h3>
+      <h1 className="font-display mb-4 text-xl font-bold text-[var(--ink)]">My Library</h1>
       <CatalogGrid
         items={displayItems}
         wish={wish}

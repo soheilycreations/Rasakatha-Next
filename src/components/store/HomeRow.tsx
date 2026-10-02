@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { CatalogBook } from "@/lib/catalog";
+import Link from "next/link";
 import RowCard from "./RowCard";
 import { IconChevronLeft, IconChevronRight } from "./icons";
 
@@ -12,28 +13,33 @@ export default function HomeRow({
   onToggleWish,
   onAdd,
   onOpen,
-  onViewAll,
+  viewAllHref,
+  initialItems,
+  excludeId,
 }: {
   title: string;
-  fetchUrl: string;
+  fetchUrl?: string;
+  initialItems?: CatalogBook[];
+  viewAllHref?: string;
+  excludeId?: string;
   wish: Record<string, boolean>;
   onToggleWish: (id: string) => void;
   onAdd: (book: CatalogBook) => void;
   onOpen: (book: CatalogBook) => void;
-  onViewAll?: () => void;
 }) {
-  const [items, setItems] = useState<CatalogBook[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [fetched, setFetched] = useState<CatalogBook[] | null>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (initialItems || !fetchUrl) return;
     fetch(fetchUrl)
       .then((r) => r.json())
-      .then((data: { items: CatalogBook[] }) => {
-        setItems(data.items);
-        setLoading(false);
-      });
-  }, [fetchUrl]);
+      .then((data: { items: CatalogBook[] }) => setFetched(data.items))
+      .catch(() => setFetched([]));
+  }, [fetchUrl, initialItems]);
+
+  const loading = !initialItems && fetched === null;
+  const items = (initialItems ?? fetched ?? []).filter((b) => b.id !== excludeId);
 
   const scroll = (dir: 1 | -1) => {
     scrollerRef.current?.scrollBy({ left: dir * 640, behavior: "smooth" });
@@ -43,16 +49,16 @@ export default function HomeRow({
 
   return (
     <section className="group/row relative mb-10">
-      <div className="mb-3.5 flex items-center gap-4 px-6 sm:px-8">
-        <h3 className="font-display text-lg font-bold text-[var(--ink)] sm:text-xl">{title}</h3>
+      <div className="mb-3.5 flex items-center gap-4 px-4 sm:px-8">
+        <h2 className="font-display text-lg font-bold text-[var(--ink)] sm:text-xl">{title}</h2>
         <div className="flex-1" />
-        {onViewAll && (
-          <button
-            onClick={onViewAll}
+        {viewAllHref && (
+          <Link
+            href={viewAllHref}
             className="text-xs font-semibold text-accent-blue transition-colors hover:opacity-80"
           >
             View all
-          </button>
+          </Link>
         )}
       </div>
 
