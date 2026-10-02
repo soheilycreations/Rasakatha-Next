@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { trackBeginCheckout } from "@/lib/analytics";
 import type { CartItem } from "@/lib/cart";
 import { money, tintForId } from "@/lib/format";
-import { SRI_LANKA_LOCATIONS, calculateShippingFee } from "@/lib/shipping";
+import { calculateShippingFee } from "@/lib/shipping";
+import LocationCombobox from "./LocationCombobox";
 import type { Customer } from "@/lib/orders";
 import type { Account } from "@/lib/account";
 import BookCover from "./BookCover";
@@ -38,38 +39,16 @@ const ALL_PAYMENT_METHODS: PaymentMethod[] = [
 
 const DEFAULT_ITEM_WEIGHT = 303;
 
-function LocationSelect({
-  value,
-  onChange,
-  hasError,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  hasError: boolean;
-}) {
-  return (
-    <select
-      value={value}
-      aria-label="Delivery city or town"
-      onChange={(e) => onChange(e.target.value)}
-      className={`w-full rounded-xl border bg-[var(--surface-tint)] px-3.5 py-2.5 text-[14px] text-[var(--ink)] focus:outline-none focus:border-accent/50 transition-colors ${
-        hasError ? "border-accent" : "border-[var(--border)]"
-      }`}
-    >
-      <option value="" style={{ color: "#111", background: "#fff" }}>
-        Select delivery city / town
-      </option>
-      {SRI_LANKA_LOCATIONS.map((d) => (
-        <optgroup key={d.name} label={d.name} style={{ color: "#111", background: "#fff" }}>
-          {d.towns.map((t) => (
-            <option key={t} value={t} style={{ color: "#111", background: "#fff" }}>
-              {t}
-            </option>
-          ))}
-        </optgroup>
-      ))}
-    </select>
-  );
+const ADDRESS_KEY = "rasakatha:last-address";
+
+type SavedAddress = { name?: string; phone?: string; email?: string; city?: string; address?: string };
+
+function readSavedAddress(): SavedAddress {
+  try {
+    return JSON.parse(localStorage.getItem(ADDRESS_KEY) || "{}") as SavedAddress;
+  } catch {
+    return {};
+  }
 }
 
 export default function CheckoutPage({
@@ -85,11 +64,13 @@ export default function CheckoutPage({
   onPlaceOrder: (payment: string, customer: Customer) => Promise<void>;
   onBack: () => void;
 }) {
-  const [name, setName] = useState(account?.name ?? "");
-  const [email, setEmail] = useState(account?.email ?? "");
-  const [phone, setPhone] = useState(account?.phone ?? "");
-  const [address, setAddress] = useState("");
-  const [city, setCity] = useState("");
+  // Signed-in customers get their last used delivery details prefilled.
+  const [saved] = useState<SavedAddress>(() => (account && typeof window !== "undefined" ? readSavedAddress() : {}));
+  const [name, setName] = useState(account?.name || saved.name || "");
+  const [email, setEmail] = useState(account?.email || saved.email || "");
+  const [phone, setPhone] = useState(account?.phone || saved.phone || "");
+  const [address, setAddress] = useState(saved.address ?? "");
+  const [city, setCity] = useState(saved.city ?? "");
   const [isGift, setIsGift] = useState(false);
   const [giftName, setGiftName] = useState("");
   const [giftPhone, setGiftPhone] = useState("");
@@ -137,6 +118,14 @@ export default function CheckoutPage({
       isGift,
       ...(isGift ? { giftName, giftPhone, giftCity, giftAddress } : {}),
     };
+
+    if (account) {
+      try {
+        localStorage.setItem(ADDRESS_KEY, JSON.stringify({ name, phone, email, city, address }));
+      } catch {
+        // storage unavailable (private mode): prefill just won't happen next time
+      }
+    }
 
     setPlacing(true);
     setSubmitError("");
@@ -231,7 +220,7 @@ export default function CheckoutPage({
           <div>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="sm:col-span-2">
-                <LocationSelect value={city} onChange={setCity} hasError={!!errors.city} />
+                <LocationCombobox value={city} onChange={setCity} hasError={!!errors.city} />
                 {errors.city && <p className="mt-1 text-[11.5px] text-accent">{errors.city}</p>}
               </div>
               <div className="sm:col-span-2">
@@ -295,7 +284,7 @@ export default function CheckoutPage({
                   {errors.giftPhone && <p className="mt-1 text-[11.5px] text-accent">{errors.giftPhone}</p>}
                 </div>
                 <div className="sm:col-span-2">
-                  <LocationSelect value={giftCity} onChange={setGiftCity} hasError={!!errors.giftCity} />
+                  <LocationCombobox value={giftCity} onChange={setGiftCity} hasError={!!errors.giftCity} label="Recipient's city or town" />
                   {errors.giftCity && <p className="mt-1 text-[11.5px] text-accent">{errors.giftCity}</p>}
                 </div>
                 <div className="sm:col-span-2">
@@ -321,7 +310,7 @@ export default function CheckoutPage({
                 return (
                   <label
                     key={m.id}
-                    className={`group relative flex cursor-pointer flex-col gap-3 overflow-hidden rounded-2xl border p-4 transition-all duration-200 ${
+                    className={`group relative flex cursor-pointer flex-col gap-3 overflow-hidden rounded-2xl border p-4 transition-all duration-200 focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[var(--accent)] ${
                       selected
                         ? "border-accent bg-accent/[0.06] shadow-[0_10px_28px_-14px_rgba(239,66,56,0.55)]"
                         : "border-[var(--border)] bg-[var(--surface-tint)] hover:border-[var(--border-strong)] hover:bg-[var(--surface-tint-strong)]"

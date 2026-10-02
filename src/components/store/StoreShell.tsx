@@ -7,10 +7,9 @@ import type { CatalogBook } from "@/lib/catalog";
 import type { CartItem } from "@/lib/cart";
 import type { Account } from "@/lib/account";
 import type { Customer, StoredOrder } from "@/lib/orders";
-import { bookHref, ROUTES } from "@/lib/links";
+import { authorHref, bookHref, ROUTES } from "@/lib/links";
 import Sidebar from "./Sidebar";
 import TopBar from "./TopBar";
-import SearchResults from "./SearchResults";
 import AuthModal from "./AuthModal";
 import { submitPayHereForm } from "@/lib/payhere-client";
 import { trackAddToCart } from "@/lib/analytics";
@@ -45,7 +44,6 @@ export default function StoreShell({ children }: { children: React.ReactNode }) 
 function StorefrontShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [query, setQuery] = useState("");
   const [wish, setWish] = useState<Record<string, boolean>>({});
   const [cart, setCart] = useState<CartItem[]>([]);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -61,7 +59,6 @@ function StorefrontShell({ children }: { children: React.ReactNode }) {
   const [prevPath, setPrevPath] = useState(pathname);
   if (pathname !== prevPath) {
     setPrevPath(pathname);
-    setQuery("");
     setMobileNavOpen(false);
   }
   useEffect(() => {
@@ -106,6 +103,44 @@ function StorefrontShell({ children }: { children: React.ReactNode }) {
       .then((a: Account | null) => setAccount(a))
       .catch(() => {});
   }, []);
+
+  // Wishlist <-> account sync. On sign-in the server list and the local list are merged
+  // (union), then every later change is saved back (debounced).
+  const wishSyncedFor = useRef<string | null>(null);
+  const accountId = account?.id ?? null;
+  useEffect(() => {
+    if (!accountId || !hydrated) return;
+    let cancelled = false;
+    fetch("/api/auth/wishlist")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { ids: string[] } | null) => {
+        if (cancelled || !data) return;
+        wishSyncedFor.current = accountId;
+        const serverIds = new Set(data.ids);
+        setWish((local) => {
+          const merged: Record<string, boolean> = { ...local };
+          for (const id of serverIds) merged[id] = true;
+          return merged;
+        });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [accountId, hydrated]);
+
+  useEffect(() => {
+    if (!accountId || wishSyncedFor.current !== accountId) return;
+    const t = setTimeout(() => {
+      const ids = Object.keys(wish).filter((id) => wish[id]);
+      fetch("/api/auth/wishlist", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids }),
+      }).catch(() => {});
+    }, 800);
+    return () => clearTimeout(t);
+  }, [wish, accountId]);
 
   const notify = useCallback((message: string) => {
     setToast(message);
@@ -190,7 +225,6 @@ function StorefrontShell({ children }: { children: React.ReactNode }) {
     };
   }, [wish, cart, account, placedOrder, router, notify]);
 
-  const searching = query.trim().length > 0;
   const nav = navForPath(pathname);
   const cartCount = cart.reduce((s, x) => s + x.qty, 0);
   const wishCount = Object.values(wish).filter(Boolean).length;
@@ -232,8 +266,9 @@ function StorefrontShell({ children }: { children: React.ReactNode }) {
 
           <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
             <TopBar
-              query={query}
-              onQueryChange={setQuery}
+              onSearch={(q) => router.push(`${ROUTES.search}?q=${encodeURIComponent(q)}`)}
+              onOpenBook={(book) => router.push(bookHref(book))}
+              onOpenAuthor={(name) => router.push(authorHref(name))}
               cartItems={cart}
               onRemoveFromCart={state.removeFromCart}
               onChangeCartQty={state.changeCartQty}
@@ -247,19 +282,7 @@ function StorefrontShell({ children }: { children: React.ReactNode }) {
             />
 
             <div ref={scrollRef} className="flex-1 overflow-y-auto pb-20 md:pb-4">
-              {searching ? (
-                <div className="px-4 pt-4 sm:px-8">
-                  <SearchResults
-                    query={query}
-                    wish={wish}
-                    onToggleWish={state.toggleWish}
-                    onAdd={state.addBookToCart}
-                    onOpen={state.openBook}
-                  />
-                </div>
-              ) : (
-                children
-              )}
+              {children}
             </div>
           </main>
         </div>
@@ -279,7 +302,7 @@ function StorefrontShell({ children }: { children: React.ReactNode }) {
               key={href}
               href={href}
               className="relative flex flex-1 flex-col items-center gap-1 py-2.5 text-[10.5px] font-semibold"
-              style={{ color: active ? "#EF4238" : "var(--ink-faint)" }}
+              style={{ color: active ? "var(--accent)" : "var(--ink-faint)" }}
             >
               <span className="relative grid h-5 w-5 place-items-center">
                 <Icon className="h-[19px] w-[19px]" />

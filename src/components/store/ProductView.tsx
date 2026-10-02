@@ -67,7 +67,7 @@ export default function ProductView({
   ];
 
   return (
-    <div className="pt-4">
+    <div className="pt-4 max-md:pb-20">
       <div className="px-4 sm:px-8">
         <nav aria-label="Breadcrumb" className="mb-5 flex items-center gap-2 text-[12.5px] text-[var(--ink-faint)]">
           <button
@@ -132,7 +132,7 @@ export default function ProductView({
               {book.onSale && book.salePrice && (
                 <>
                   <span className="text-base text-[var(--ink-faint)] line-through">{money(book.regularPrice)}</span>
-                  <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11.5px] font-bold text-emerald-500">
+                  <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11.5px] font-bold text-[var(--success-text)]">
                     You save {money(book.regularPrice - book.salePrice)}
                   </span>
                 </>
@@ -188,7 +188,7 @@ export default function ProductView({
                 aria-label={wished ? "Remove from My Library" : "Save to My Library"}
                 aria-pressed={wished}
                 className="grid h-[50px] w-[50px] shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--surface-tint)] transition-colors hover:border-accent/40"
-                style={{ color: wished ? "#EF4238" : "var(--ink-dim)" }}
+                style={{ color: wished ? "var(--accent)" : "var(--ink-dim)" }}
               >
                 <IconHeart className="h-5 w-5" style={{ fill: wished ? "currentColor" : "none" }} />
               </button>
@@ -242,6 +242,24 @@ export default function ProductView({
       </div>
 
       <Footer />
+
+      {/* Mobile: keep the buy button in reach above the bottom nav. */}
+      {book.inStock && (
+        <div className="fixed inset-x-0 bottom-[calc(58px+env(safe-area-inset-bottom))] z-30 flex items-center gap-3 border-t border-[var(--border)] bg-[var(--panel)]/95 px-4 py-2.5 backdrop-blur-md md:hidden">
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-[12px] text-[var(--ink-dim)]">{book.title}</div>
+            <div className="text-[16px] font-extrabold text-[var(--ink)]">{money(price)}</div>
+          </div>
+          <button
+            type="button"
+            onClick={handleAdd}
+            className="btn-accent flex shrink-0 items-center gap-2 rounded-full px-6 py-3 text-[13.5px] font-bold text-white"
+          >
+            <IconCart className="h-4 w-4" />
+            Add to Cart
+          </button>
+        </div>
+      )}
     </div>
   );
 }

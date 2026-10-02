@@ -66,10 +66,11 @@ export default function Sidebar({
         <Image
           src={logoLight}
           alt="Rasakatha.lk"
+          sizes="200px"
           className="logo-light h-[46px] w-auto"
           priority
         />
-        <Image src={logoDark} alt="Rasakatha.lk" className="logo-dark h-[58px] w-auto" priority />
+        <Image src={logoDark} alt="Rasakatha.lk" sizes="200px" className="logo-dark h-[58px] w-auto" priority />
       </Link>
 
       <nav className="flex flex-col gap-1">
@@ -95,7 +96,7 @@ export default function Sidebar({
               )}
               <span
                 className="grid h-[18px] w-[18px] place-items-center"
-                style={{ color: isActive ? "#EF4238" : "var(--ink-faint)" }}
+                style={{ color: isActive ? "var(--accent)" : "var(--ink-faint)" }}
               >
                 <Icon />
               </span>

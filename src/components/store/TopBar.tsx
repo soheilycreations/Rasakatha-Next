@@ -3,13 +3,19 @@
 import { useEffect, useRef, useState } from "react";
 import type { CartItem } from "@/lib/cart";
 import type { Account } from "@/lib/account";
-import { IconSearch, IconCart, IconHeart } from "./icons";
+import Link from "next/link";
+import Image from "next/image";
+import logoLight from "@/assets/rasakatha-logo-light-mode.png";
+import logoDark from "@/assets/rasakatha-logo-dark-mode.png";
+import { IconCart, IconHeart } from "./icons";
+import SearchBox from "./SearchBox";
 import ThemeToggle from "./ThemeToggle";
 import CartPopover from "./CartPopover";
 
 export default function TopBar({
-  query,
-  onQueryChange,
+  onSearch,
+  onOpenBook,
+  onOpenAuthor,
   cartItems,
   onRemoveFromCart,
   onChangeCartQty,
@@ -21,8 +27,9 @@ export default function TopBar({
   account,
   onProfileClick,
 }: {
-  query: string;
-  onQueryChange: (v: string) => void;
+  onSearch: (q: string) => void;
+  onOpenBook: (book: { id: string; title: string }) => void;
+  onOpenAuthor: (name: string) => void;
   cartItems: CartItem[];
   onRemoveFromCart: (id: string) => void;
   onChangeCartQty: (id: string, delta: number) => void;
@@ -48,7 +55,7 @@ export default function TopBar({
   }, [cartOpen]);
 
   return (
-    <header className="relative z-30 flex items-center sm:gap-4 border-b border-[var(--border)] gap-2.5 px-4 pb-3 pt-4 shadow-[0_12px_24px_-12px_rgba(0,0,0,0.25)] sm:px-8 sm:pb-4 sm:pt-6">
+    <header className="relative z-30 flex items-center sm:gap-4 border-b border-[var(--border)] gap-2 px-3 pb-3 pt-4 shadow-[0_12px_24px_-12px_rgba(0,0,0,0.25)] sm:px-8 sm:pb-4 sm:pt-6">
       <button
         onClick={onMenuClick}
         className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-[var(--border)] bg-[var(--surface-tint)] text-[var(--ink-dim)] md:hidden"
@@ -61,33 +68,14 @@ export default function TopBar({
         </div>
       </button>
 
-      <div className="flex min-w-0 max-w-[640px] flex-[3] items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface-tint)] py-[7px] pl-[18px] pr-[7px] backdrop-blur-md transition-colors focus-within:border-accent/50 focus-within:bg-[var(--surface-tint-strong)]">
-        <IconSearch className="shrink-0 text-[var(--ink-faint)]" />
-        <input
-          type="search"
-          enterKeyHint="search"
-          aria-label="Search books and authors"
-          value={query}
-          onChange={(e) => onQueryChange(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Escape") onQueryChange("");
-          }}
-          placeholder="Search books, authors…"
-          className="min-w-0 flex-1 bg-transparent py-1 font-sans text-[15px] text-[var(--ink)] placeholder:text-[var(--ink-faint)] focus:outline-none sm:text-base"
-        />
-        {query && (
-          <button
-            type="button"
-            onClick={() => onQueryChange("")}
-            aria-label="Clear search"
-            className="grid h-[30px] w-[30px] shrink-0 place-items-center rounded-full bg-[var(--surface-tint-strong)] text-[15px] leading-none text-[var(--ink-dim)] transition-colors hover:text-[var(--ink)]"
-          >
-            ×
-          </button>
-        )}
-      </div>
+      <Link href="/" aria-label="Rasakatha.lk home" className="shrink-0 md:hidden">
+        <Image src={logoLight} alt="Rasakatha.lk" sizes="100px" className="logo-light h-[22px] w-auto" />
+        <Image src={logoDark} alt="Rasakatha.lk" sizes="100px" className="logo-dark h-[28px] w-auto" />
+      </Link>
 
-      <div className="flex-1" />
+      <SearchBox onSubmit={onSearch} onOpenBook={onOpenBook} onOpenAuthor={onOpenAuthor} />
+
+      <div className="hidden flex-1 sm:block" />
 
       <div className="hidden sm:block">
         <ThemeToggle />

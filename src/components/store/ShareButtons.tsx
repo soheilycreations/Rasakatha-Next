@@ -28,7 +28,7 @@ export default function ShareButtons({ title, url: canonicalUrl }: { title: stri
   };
 
   const buttons: { key: "whatsapp" | "facebook" | "x"; label: string; bg: string }[] = [
-    { key: "whatsapp", label: "WA", bg: "#25D366" },
+    { key: "whatsapp", label: "WA", bg: "#0F7D3F" },
     { key: "facebook", label: "f", bg: "#1877F2" },
     { key: "x", label: "X", bg: "#111111" },
   ];

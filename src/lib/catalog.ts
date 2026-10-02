@@ -1,6 +1,7 @@
 import { supabase } from "./server/supabase";
 import { revalidatePath } from "next/cache";
 import { slugify } from "./links";
+import { normalizeText, phoneticKey, tokens } from "./searchText";
 
 export type CatalogBook = {
   id: string;
@@ -155,18 +156,71 @@ export function inStockFirst(items: CatalogBook[]): CatalogBook[] {
   );
 }
 
+const NON_AUTHOR_NAMES = new Set(["Rasakatha Publishers", "Various Authors", "Other"]);
+
+type Indexed = { book: CatalogBook; text: string; key: string; title: string; titleKey: string };
+let indexCache: { books: CatalogBook[]; items: Indexed[] } | null = null;
+
+function searchIndex(catalog: CatalogBook[]): Indexed[] {
+  if (indexCache?.books === catalog) return indexCache.items;
+  const items = catalog.map((book) => {
+    const text = normalizeText(`${book.title} ${book.author} ${book.publisher ?? ""}`);
+    const title = normalizeText(book.title);
+    return { book, text, key: phoneticKey(text), title, titleKey: phoneticKey(title) };
+  });
+  indexCache = { books: catalog, items };
+  return items;
+}
+
+// Every word must match (AND). Both halves of "සිංහල | English" titles are searched,
+// punctuation is ignored, and Latin words also match phonetically (Singlish spellings).
 export async function searchCatalog(query: string): Promise<CatalogBook[]> {
-  const q = query.trim().toLowerCase();
-  if (!q) return [];
-  const catalog = await getCatalog();
-  return inStockFirst(
-    catalog.filter(
-      (b) =>
-        b.title.toLowerCase().includes(q) ||
-        b.author.toLowerCase().includes(q) ||
-        (b.publisher ?? "").toLowerCase().includes(q)
+  const qTokens = tokens(query);
+  if (qTokens.length === 0) return [];
+  const qKeys = qTokens.map(phoneticKey);
+  const whole = normalizeText(query);
+  const wholeKey = phoneticKey(query);
+
+  const scored: { book: CatalogBook; score: number }[] = [];
+  for (const it of searchIndex(await getCatalog())) {
+    if (!qTokens.every((t, i) => it.text.includes(t) || it.key.includes(qKeys[i]))) continue;
+    let score = 0;
+    if (it.title.includes(whole) || it.titleKey.includes(wholeKey)) score += 4;
+    if (it.title.startsWith(qTokens[0]) || it.titleKey.startsWith(qKeys[0])) score += 2;
+    score += qTokens.filter((t, i) => it.title.includes(t) || it.titleKey.includes(qKeys[i])).length;
+    scored.push({ book: it.book, score });
+  }
+  return scored
+    .sort(
+      (a, b) =>
+        b.score - a.score || Number(b.book.inStock) - Number(a.book.inStock) || Number(b.book.id) - Number(a.book.id)
     )
-  );
+    .map((x) => x.book);
+}
+
+export type Suggestions = {
+  books: { id: string; title: string; author: string; cover: string | null }[];
+  authors: { name: string; count: number }[];
+};
+
+export async function getSuggestions(query: string): Promise<Suggestions> {
+  const found = await searchCatalog(query);
+  const qTokens = tokens(query);
+  const qKeys = qTokens.map(phoneticKey);
+  const counts = new Map<string, number>();
+  for (const b of await getCatalog()) {
+    if (!b.author || NON_AUTHOR_NAMES.has(b.author)) continue;
+    const text = normalizeText(b.author);
+    const key = phoneticKey(text);
+    if (qTokens.every((t, i) => text.includes(t) || key.includes(qKeys[i]))) counts.set(b.author, (counts.get(b.author) ?? 0) + 1);
+  }
+  return {
+    books: found.slice(0, 6).map((b) => ({ id: b.id, title: b.title, author: b.author, cover: b.cover })),
+    authors: [...counts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([name, count]) => ({ name, count })),
+  };
 }
 
 export async function getByCategory(category: string): Promise<CatalogBook[]> {
@@ -193,8 +247,6 @@ export async function getByIds(ids: string[]): Promise<CatalogBook[]> {
   const set = new Set(ids);
   return (await getCatalog()).filter((b) => set.has(b.id));
 }
-
-const NON_AUTHOR_NAMES = new Set(["Rasakatha Publishers", "Various Authors", "Other"]);
 
 export type AuthorSummary = { name: string; count: number; avgRating: number; covers: string[] };
 

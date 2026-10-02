@@ -52,3 +52,7 @@ next-env.d.ts
 
 # uploaded to Supabase Storage instead (562MB)
 /public/covers/
+
+# Playwright
+/test-results/
+/playwright-report/

@@ -96,12 +96,12 @@ export default function CatalogListing({
                   aria-current={active ? "page" : undefined}
                   className="shrink-0 rounded-full px-4 py-2 text-xs font-semibold transition-colors"
                   style={{
-                    background: active ? "#EF4238" : "var(--surface-tint)",
+                    background: active ? "var(--accent-fill)" : "var(--surface-tint)",
                     color: active ? "#fff" : "var(--ink-dim)",
-                    border: active ? "1px solid #EF4238" : "1px solid var(--border)",
+                    border: active ? "1px solid var(--accent-fill)" : "1px solid var(--border)",
                   }}
                 >
-                  {c.name} <span className="opacity-60">({c.count})</span>
+                  {c.name} <span className="font-normal">({c.count})</span>
                 </Link>
               );
             })}

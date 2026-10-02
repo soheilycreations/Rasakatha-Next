@@ -18,7 +18,12 @@ export async function PATCH(request: Request) {
     name: name !== undefined ? name.trim() : account.name,
     phone: phone !== undefined ? phone.trim() : account.phone,
   };
-  const { error } = await authClient().auth.admin.updateUserById(account.id, { user_metadata: next });
+  // keep other metadata (e.g. the wishlist) when updating name/phone
+  const sb = authClient();
+  const { data: current } = await sb.auth.admin.getUserById(account.id);
+  const { error } = await sb.auth.admin.updateUserById(account.id, {
+    user_metadata: { ...(current.user?.user_metadata ?? {}), ...next },
+  });
   if (error) return NextResponse.json({ error: "Could not update profile" }, { status: 500 });
   return NextResponse.json({ ...account, ...next });
 }

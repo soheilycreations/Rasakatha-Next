@@ -142,7 +142,7 @@ export default function AdminOrdersPage() {
                       {o.payment !== "cod" && o.paymentStatus && (
                         <span
                           className={`ml-2 rounded-full px-2 py-0.5 text-[10.5px] font-bold uppercase ${
-                            o.paymentStatus === "paid" ? "bg-emerald-500/15 text-emerald-500" : o.paymentStatus === "failed" ? "bg-accent/15 text-accent" : "bg-amber-500/15 text-amber-500"
+                            o.paymentStatus === "paid" ? "bg-emerald-500/15 text-[var(--success-text)]" : o.paymentStatus === "failed" ? "bg-accent/15 text-accent" : "bg-amber-500/15 text-amber-500"
                           }`}
                         >
                           {o.paymentStatus}

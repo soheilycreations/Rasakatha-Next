@@ -47,4 +47,5 @@ export const ROUTES = {
   contact: "/contact",
   delivery: "/delivery-returns",
   help: "/help",
+  search: "/search",
 } as const;
