@@ -1,5 +1,7 @@
 import type { CartItem } from "@/lib/cart";
 
+export type PaymentStatus = "pending" | "paid" | "failed" | "cod";
+
 export type OrderStatus = "processing" | "packed" | "shipped" | "delivered";
 
 export const ORDER_STATUS_STEPS: { key: OrderStatus; label: string }[] = [
@@ -30,6 +32,7 @@ export type StoredOrder = {
   deliveryFee: number;
   total: number;
   payment: string;
+  paymentStatus?: PaymentStatus;
   status: OrderStatus;
   customer: Customer;
 };

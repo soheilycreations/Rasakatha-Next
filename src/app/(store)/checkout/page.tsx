@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { enabledPaymentMethods } from "@/lib/server/payments";
 import { CheckoutClient } from "@/components/store/ClientPages";
 
 export const metadata: Metadata = {
@@ -8,5 +9,5 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
-  return <CheckoutClient />;
+  return <CheckoutClient methods={enabledPaymentMethods()} />;
 }

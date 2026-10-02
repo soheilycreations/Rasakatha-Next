@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { StoredOrder } from "@/lib/orders";
 import { ORDER_STATUS_STEPS } from "@/lib/orders";
 import { money } from "@/lib/format";
+import { submitPayHereForm } from "@/lib/payhere-client";
 import OrderStatusTracker from "./OrderStatusTracker";
 import { IconTruck } from "./icons";
 
@@ -13,6 +14,7 @@ export default function TrackOrderView({ initialOrder }: { initialOrder?: Stored
   const [order, setOrder] = useState<StoredOrder | undefined>(initialOrder);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [paying, setPaying] = useState(false);
 
   const handleLookup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,6 +81,35 @@ export default function TrackOrderView({ initialOrder }: { initialOrder?: Stored
             </span>
             <span className="text-[16px] font-extrabold text-[var(--ink)]">{money(order.total)}</span>
           </div>
+
+          {order.payment === "payhere" && order.paymentStatus !== "paid" && (
+            <div className="mt-4 flex items-center justify-between gap-3 rounded-xl bg-accent/[0.08] p-3.5">
+              <span className="text-[13px] text-[var(--ink-dim)]">
+                {order.paymentStatus === "failed" ? "Your payment didn't go through." : "Payment not received yet."}
+              </span>
+              <button
+                type="button"
+                disabled={paying}
+                onClick={async () => {
+                  setPaying(true);
+                  const res = await fetch("/api/payments/payhere/start", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ id: order.id, phone }),
+                  });
+                  const data = await res.json().catch(() => ({}));
+                  if (res.ok && data.payhere) submitPayHereForm(data.payhere);
+                  else {
+                    setError(data.error || "Couldn't start the payment. Please try again.");
+                    setPaying(false);
+                  }
+                }}
+                className="btn-accent rounded-full px-5 py-2 text-[13px] font-bold text-white disabled:opacity-60"
+              >
+                {paying ? "Redirecting…" : "Pay now"}
+              </button>
+            </div>
+          )}
         </div>
       )}
 

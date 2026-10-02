@@ -4,9 +4,9 @@ import { rowToOrder, type OrderRow } from "@/lib/server/ordersDb";
 import { getByIds } from "@/lib/catalog";
 import { calculateShippingFee, SRI_LANKA_LOCATIONS } from "@/lib/shipping";
 import type { CartItem } from "@/lib/cart";
+import { buildPayHereForm, enabledPaymentMethods, type PaymentMethodId } from "@/lib/server/payments";
 
 const MAX_ID_ATTEMPTS = 5;
-const PAYMENT_METHODS = new Set(["cod", "payhere", "koko", "mintpay"]);
 const DEFAULT_ITEM_WEIGHT = 303;
 const KNOWN_TOWNS = new Set(SRI_LANKA_LOCATIONS.flatMap((d) => d.towns));
 
@@ -21,8 +21,8 @@ export async function POST(request: Request) {
   if (!Array.isArray(rawItems) || rawItems.length === 0 || rawItems.length > 50) {
     return NextResponse.json({ error: "Your cart is empty." }, { status: 400 });
   }
-  if (!PAYMENT_METHODS.has(payment)) {
-    return NextResponse.json({ error: "Choose a payment method." }, { status: 400 });
+  if (!enabledPaymentMethods().includes(payment as PaymentMethodId)) {
+    return NextResponse.json({ error: "That payment method is not available. Please choose another." }, { status: 400 });
   }
 
   const customer = {
@@ -95,24 +95,28 @@ export async function POST(request: Request) {
   const deliveryFee = calculateShippingFee(deliveryCity, totalWeight);
   const total = subtotal + deliveryFee;
 
+  const paymentStatus = payment === "cod" ? "cod" : "pending";
+  const baseRow = { items, subtotal, delivery_fee: deliveryFee, total, payment, status: "processing", customer };
+
   for (let attempt = 0; attempt < MAX_ID_ATTEMPTS; attempt++) {
     const id = Math.floor(10000 + Math.random() * 90000).toString();
-    const { data, error } = await supabase()
+    let { data, error } = await supabase()
       .from("orders")
-      .insert({
-        id,
-        items,
-        subtotal,
-        delivery_fee: deliveryFee,
-        total,
-        payment,
-        status: "processing",
-        customer,
-      })
+      .insert({ id, ...baseRow, payment_status: paymentStatus })
       .select()
       .single();
 
-    if (!error) return NextResponse.json(rowToOrder(data as OrderRow));
+    // 42703 / PGRST204: supabase/payments.sql hasn't been run yet, so still take the order.
+    if (error && (error.code === "42703" || error.code === "PGRST204")) {
+      ({ data, error } = await supabase().from("orders").insert({ id, ...baseRow }).select().single());
+    }
+
+    if (!error) {
+      const order = rowToOrder(data as OrderRow);
+      // PayHere: the browser must now POST this signed form to the gateway.
+      if (payment === "payhere") return NextResponse.json({ ...order, payhere: buildPayHereForm(order) });
+      return NextResponse.json(order);
+    }
     // 23505 = unique violation: the random id collided, so try another one.
     if (error.code !== "23505") {
       return NextResponse.json({ error: "We couldn't place your order. Please try again." }, { status: 500 });

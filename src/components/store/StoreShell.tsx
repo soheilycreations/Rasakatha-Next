@@ -12,6 +12,7 @@ import Sidebar from "./Sidebar";
 import TopBar from "./TopBar";
 import SearchResults from "./SearchResults";
 import AuthModal from "./AuthModal";
+import { submitPayHereForm } from "@/lib/payhere-client";
 import { trackAddToCart } from "@/lib/analytics";
 import FlyToCartLayer from "./FlyToCartLayer";
 import { StoreContext, type StoreState } from "./StoreContext";
@@ -175,8 +176,14 @@ function StorefrontShell({ children }: { children: React.ReactNode }) {
         const data = await res.json().catch(() => ({}));
         // Keep the cart if anything went wrong so the customer can retry.
         if (!res.ok) throw new Error(data.error || "We couldn't place your order. Please try again.");
-        setPlacedOrder(data as StoredOrder);
+        const { payhere, ...order } = data as StoredOrder & { payhere?: { action: string; fields: Record<string, string> } };
+        setPlacedOrder(order);
         setCart([]);
+        // Online payment: hand the customer to PayHere with the server-signed form.
+        if (payhere) {
+          submitPayHereForm(payhere);
+          return;
+        }
         router.push(ROUTES.thankYou);
       },
       notify,

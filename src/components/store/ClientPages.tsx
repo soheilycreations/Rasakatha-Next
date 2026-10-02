@@ -40,7 +40,7 @@ export function CartClient() {
   );
 }
 
-export function CheckoutClient() {
+export function CheckoutClient({ methods }: { methods: string[] }) {
   const router = useRouter();
   const s = useStore();
   return (
@@ -49,6 +49,7 @@ export function CheckoutClient() {
         key={s.account?.id ?? "guest"}
         account={s.account}
         items={s.cart}
+        methods={methods}
         onPlaceOrder={s.placeOrder}
         onBack={() => router.push(ROUTES.cart)}
       />

@@ -138,7 +138,17 @@ export default function AdminOrdersPage() {
                       {o.customer.name}
                       <div className="text-[11px] text-[var(--ink-faint)]">{o.customer.phone}</div>
                     </td>
-                    <td className="px-4 py-3 text-[var(--ink-dim)]">{PAYMENT_LABELS[o.payment] ?? o.payment}</td>
+                    <td className="px-4 py-3 text-[var(--ink-dim)]">{PAYMENT_LABELS[o.payment] ?? o.payment}
+                      {o.payment !== "cod" && o.paymentStatus && (
+                        <span
+                          className={`ml-2 rounded-full px-2 py-0.5 text-[10.5px] font-bold uppercase ${
+                            o.paymentStatus === "paid" ? "bg-emerald-500/15 text-emerald-500" : o.paymentStatus === "failed" ? "bg-accent/15 text-accent" : "bg-amber-500/15 text-amber-500"
+                          }`}
+                        >
+                          {o.paymentStatus}
+                        </span>
+                      )}
+                    </td>
                     <td className="px-4 py-3 font-semibold text-[var(--ink)]">{money(o.total)}</td>
                     <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                       <select

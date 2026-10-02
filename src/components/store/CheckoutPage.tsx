@@ -8,33 +8,32 @@ import { SRI_LANKA_LOCATIONS, calculateShippingFee } from "@/lib/shipping";
 import type { Customer } from "@/lib/orders";
 import type { Account } from "@/lib/account";
 import BookCover from "./BookCover";
+import { PaymentIcon } from "./PaymentIcons";
 import { IconTruck, IconHeart } from "./icons";
 
 type PaymentMethod = {
   id: string;
   title: string;
   description: string;
-  badge: string;
   badgeBg: string;
 };
 
-const PAYMENT_METHODS: PaymentMethod[] = [
-  { id: "cod", title: "Cash on Delivery", description: "Pay with cash upon delivery.", badge: "COD", badgeBg: "#2f5a3a" },
+// Which of these are offered is decided on the server (see enabledPaymentMethods).
+const ALL_PAYMENT_METHODS: PaymentMethod[] = [
+  { id: "cod", title: "Cash on Delivery", description: "Pay with cash upon delivery.", badgeBg: "#2f5a3a" },
   {
     id: "payhere",
-    title: "PayHere",
+    title: "Pay online (PayHere)",
     description: "Pay by Visa, MasterCard, AMEX, eZcash, mCash or Internet Banking via PayHere.",
-    badge: "PH",
     badgeBg: "#00aef0",
   },
   {
     id: "koko",
     title: "Koko: Buy Now Pay Later",
     description: "Pay in 3 interest-free installments with Koko.",
-    badge: "KO",
     badgeBg: "#7c1c18",
   },
-  { id: "mintpay", title: "MintPay", description: "Pay in easy installments with MintPay.", badge: "MP", badgeBg: "#155158" },
+  { id: "mintpay", title: "MintPay", description: "Pay in easy installments with MintPay.", badgeBg: "#155158" },
 ];
 
 const DEFAULT_ITEM_WEIGHT = 303;
@@ -76,10 +75,12 @@ function LocationSelect({
 export default function CheckoutPage({
   account,
   items,
+  methods,
   onPlaceOrder,
   onBack,
 }: {
   account: Account | null;
+  methods: string[];
   items: CartItem[];
   onPlaceOrder: (payment: string, customer: Customer) => Promise<void>;
   onBack: () => void;
@@ -315,7 +316,7 @@ export default function CheckoutPage({
           <div>
             <h4 className="mb-3 text-[15px] font-bold text-[var(--ink)]">Payment Method</h4>
             <div className="grid gap-3 sm:grid-cols-2">
-              {PAYMENT_METHODS.map((m) => {
+              {ALL_PAYMENT_METHODS.filter((m) => methods.includes(m.id)).map((m) => {
                 const selected = payment === m.id;
                 return (
                   <label
@@ -341,10 +342,10 @@ export default function CheckoutPage({
                     />
                     <div className="flex items-center justify-between">
                       <div
-                        className="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-[11.5px] font-extrabold text-white shadow-[0_6px_14px_-6px_rgba(0,0,0,0.4)]"
+                        className="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-white shadow-[0_6px_14px_-6px_rgba(0,0,0,0.4)]"
                         style={{ background: m.badgeBg }}
                       >
-                        {m.badge}
+                        <PaymentIcon id={m.id} className="h-6 w-6" />
                       </div>
                       <div
                         className={`grid h-[22px] w-[22px] shrink-0 place-items-center rounded-full border-2 transition-colors ${

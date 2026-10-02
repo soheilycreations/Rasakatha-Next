@@ -8,6 +8,7 @@ export type OrderRow = {
   delivery_fee: number;
   total: number;
   payment: string;
+  payment_status?: StoredOrder["paymentStatus"];
   status: StoredOrder["status"];
   customer: StoredOrder["customer"];
 };
@@ -21,6 +22,7 @@ export function rowToOrder(r: OrderRow): StoredOrder {
     deliveryFee: Number(r.delivery_fee),
     total: Number(r.total),
     payment: r.payment,
+    paymentStatus: r.payment_status ?? (r.payment === "cod" ? "cod" : "pending"),
     status: r.status,
     customer: r.customer,
   };
