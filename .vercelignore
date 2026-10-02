@@ -1,0 +1,2 @@
+# Book covers are served from Supabase Storage; the local copy is not needed in a deployment.
+public/covers
