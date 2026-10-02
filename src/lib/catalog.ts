@@ -16,6 +16,8 @@ export type CatalogBook = {
   blurb: string;
   cover: string | null;
   weight: number;
+  // null = stock isn't tracked for this book
+  stockQty: number | null;
 };
 
 type BookRow = {
@@ -32,6 +34,7 @@ type BookRow = {
   blurb: string;
   cover: string | null;
   weight: number;
+  stock_qty?: number | null;
 };
 
 export function rowToBook(r: BookRow): CatalogBook {
@@ -49,6 +52,7 @@ export function rowToBook(r: BookRow): CatalogBook {
     blurb: r.blurb,
     cover: r.cover,
     weight: r.weight,
+    stockQty: r.stock_qty ?? null,
   };
 }
 
@@ -72,6 +76,7 @@ export function bookToRow(b: CatalogBook): BookRow {
     blurb: b.blurb,
     cover: b.cover,
     weight: b.weight,
+    stock_qty: b.stockQty,
   };
 }
 

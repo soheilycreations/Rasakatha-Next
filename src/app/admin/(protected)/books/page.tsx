@@ -20,6 +20,7 @@ const emptyForm: Partial<CatalogBook> = {
   blurb: "",
   cover: "",
   weight: 303,
+  stockQty: null,
 };
 
 function BookForm({
@@ -152,6 +153,15 @@ function BookForm({
               placeholder="Weight (g)"
               value={form.weight ?? 303}
               onChange={(e) => set("weight", Number(e.target.value))}
+            />
+            <input
+              className={inputClass}
+              type="number"
+              min={0}
+              placeholder="Stock qty (blank = not tracked)"
+              aria-label="Stock quantity"
+              value={form.stockQty ?? ""}
+              onChange={(e) => set("stockQty", e.target.value === "" ? null : Number(e.target.value))}
             />
           </div>
           <div>

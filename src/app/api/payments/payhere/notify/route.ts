@@ -1,5 +1,7 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { supabase } from "@/lib/server/supabase";
+import { rowToOrder, type OrderRow } from "@/lib/server/ordersDb";
+import { notifyOrderPlaced } from "@/lib/server/notify";
 import { formatAmount, verifyPayHereNotification } from "@/lib/server/payments";
 
 // PayHere server-to-server callback (notify_url). Always answer 200 once the
@@ -14,7 +16,7 @@ export async function POST(request: Request) {
 
   const { data: order } = await supabase()
     .from("orders")
-    .select("id,total,payment,payment_status")
+    .select("*")
     .eq("id", p.order_id)
     .maybeSingle();
   if (!order || order.payment !== "payhere") return new NextResponse("Unknown order", { status: 404 });
@@ -31,7 +33,10 @@ export async function POST(request: Request) {
 
   if (next && order.payment_status !== next) {
     await supabase().from("orders").update({ payment_status: next }).eq("id", order.id);
-    // TODO (Section 3): send the order confirmation email when an online payment becomes "paid".
+    if (next === "paid") {
+      const paidOrder = rowToOrder({ ...(order as OrderRow), payment_status: "paid" });
+      after(() => notifyOrderPlaced(paidOrder));
+    }
   }
   return new NextResponse("OK");
 }

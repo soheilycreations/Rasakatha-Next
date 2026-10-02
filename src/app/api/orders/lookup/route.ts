@@ -5,7 +5,8 @@ import { normalizePhone as normalize } from "@/lib/phone";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const id = (searchParams.get("id") || "").trim();
+  // Readable ids (RK-XXXXXX) are case-insensitive; legacy numeric ids are unaffected.
+  const id = (searchParams.get("id") || "").trim().toUpperCase();
   const phone = (searchParams.get("phone") || "").trim();
   if (!id || !phone) {
     return NextResponse.json({ error: "Order ID and phone number are required" }, { status: 400 });

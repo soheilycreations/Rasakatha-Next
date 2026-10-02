@@ -48,9 +48,16 @@ export async function POST(request: Request) {
     blurb: body.blurb || "",
     cover: body.cover || null,
     weight: Number(body.weight) || 303,
+    stockQty: body.stockQty == null ? null : Math.max(0, Math.floor(Number(body.stockQty)) || 0),
   };
 
-  const { error } = await supabase().from("books").insert(bookToRow(book));
+  let { error } = await supabase().from("books").insert(bookToRow(book));
+  // supabase/stock.sql not run yet: save without the stock column
+  if (error && (error.code === "42703" || error.code === "PGRST204")) {
+    const { stock_qty: _omit, ...row } = bookToRow(book);
+    void _omit;
+    ({ error } = await supabase().from("books").insert(row));
+  }
   if (error) {
     const dup = error.code === "23505";
     return NextResponse.json(
@@ -68,8 +75,18 @@ export async function PUT(request: Request) {
   if (!existing) return NextResponse.json({ error: "Book not found" }, { status: 404 });
 
   const merged = { ...rowToBook(existing as Row), ...body };
+  if (merged.stockQty != null) {
+    merged.stockQty = Math.max(0, Math.floor(Number(merged.stockQty)) || 0);
+    // keep the in-stock flag consistent with a tracked quantity
+    merged.inStock = merged.stockQty > 0;
+  }
   const { id, ...fields } = bookToRow(merged);
-  const { error } = await supabase().from("books").update(fields).eq("id", id);
+  let { error } = await supabase().from("books").update(fields).eq("id", id);
+  if (error && (error.code === "42703" || error.code === "PGRST204")) {
+    const { stock_qty: _omit, ...rest } = fields;
+    void _omit;
+    ({ error } = await supabase().from("books").update(rest).eq("id", id));
+  }
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   invalidateCatalog();
   return NextResponse.json(merged);

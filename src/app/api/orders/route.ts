@@ -1,12 +1,18 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
+import { randomInt } from "node:crypto";
 import { supabase } from "@/lib/server/supabase";
 import { rowToOrder, type OrderRow } from "@/lib/server/ordersDb";
 import { getByIds } from "@/lib/catalog";
 import { calculateShippingFee, SRI_LANKA_LOCATIONS } from "@/lib/shipping";
 import type { CartItem } from "@/lib/cart";
+import { decrementStock } from "@/lib/server/stock";
+import { notifyOrderPlaced } from "@/lib/server/notify";
 import { buildPayHereForm, enabledPaymentMethods, type PaymentMethodId } from "@/lib/server/payments";
 
 const MAX_ID_ATTEMPTS = 5;
+// Readable but not guessable, e.g. RK-7QF3KD. No 0/O/1/I so it survives being read over the phone.
+const ID_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+const newOrderId = () => "RK-" + Array.from({ length: 6 }, () => ID_ALPHABET[randomInt(ID_ALPHABET.length)]).join("");
 const DEFAULT_ITEM_WEIGHT = 303;
 const KNOWN_TOWNS = new Set(SRI_LANKA_LOCATIONS.flatMap((d) => d.towns));
 
@@ -81,6 +87,14 @@ export async function POST(request: Request) {
     );
   }
 
+  const overStock = books.find((b) => b.stockQty != null && (qtyById.get(b.id) ?? 0) > b.stockQty);
+  if (overStock) {
+    return NextResponse.json(
+      { error: `Only ${overStock.stockQty} copies of "${overStock.title}" are left. Please reduce the quantity.` },
+      { status: 409 }
+    );
+  }
+
   const items: CartItem[] = books.map((b) => ({
     id: b.id,
     title: b.title,
@@ -99,7 +113,7 @@ export async function POST(request: Request) {
   const baseRow = { items, subtotal, delivery_fee: deliveryFee, total, payment, status: "processing", customer };
 
   for (let attempt = 0; attempt < MAX_ID_ATTEMPTS; attempt++) {
-    const id = Math.floor(10000 + Math.random() * 90000).toString();
+    const id = newOrderId();
     let { data, error } = await supabase()
       .from("orders")
       .insert({ id, ...baseRow, payment_status: paymentStatus })
@@ -113,6 +127,11 @@ export async function POST(request: Request) {
 
     if (!error) {
       const order = rowToOrder(data as OrderRow);
+      after(async () => {
+        await decrementStock(items.map((x) => ({ id: x.id, qty: x.qty })));
+        // Online orders are announced once the payment is confirmed (PayHere notify route).
+        if (payment !== "payhere") await notifyOrderPlaced(order);
+      });
       // PayHere: the browser must now POST this signed form to the gateway.
       if (payment === "payhere") return NextResponse.json({ ...order, payhere: buildPayHereForm(order) });
       return NextResponse.json(order);
