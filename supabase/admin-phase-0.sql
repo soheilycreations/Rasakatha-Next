@@ -14,6 +14,7 @@ create table if not exists staff (
   pin_hash text,                       -- scrypt hash of the 4-6 digit till PIN (cashier / stock only)
   totp_secret text,                    -- AES-GCM encrypted by the server
   totp_enabled boolean not null default false,
+  recovery_codes text[] not null default '{}', -- HMAC hashes of the one-time 2FA recovery codes
   active boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),

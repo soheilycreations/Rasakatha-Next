@@ -152,3 +152,77 @@ test("every admin API write handler writes an audit row", () => {
   expect(missing.map((f) => path.relative(root, f)), "routes with write handlers but no audit() call").toEqual([]);
   expect(files.length).toBeGreaterThan(10);
 });
+
+import { consumeRecoveryCode, generateRecoveryCodes, hashRecoveryCode, RECOVERY_CODE_COUNT } from "../../src/lib/server/recovery";
+import { isEncryptionConfigured } from "../../src/lib/server/totp";
+
+test.describe("2FA recovery codes", () => {
+  const STAFF = "33333333-3333-4333-8333-333333333333";
+  test("10 hashed one-time codes: shown once, never stored in clear", () => {
+    const { codes, hashes } = generateRecoveryCodes(STAFF);
+    expect(codes).toHaveLength(RECOVERY_CODE_COUNT);
+    expect(new Set(codes).size).toBe(RECOVERY_CODE_COUNT);
+    expect(codes.every((c) => /^[A-HJ-NP-Z2-9]{5}-[A-HJ-NP-Z2-9]{5}$/.test(c))).toBe(true);
+    for (const h of hashes) {
+      expect(h).toMatch(/^[0-9a-f]{64}$/);
+      expect(codes.some((c) => h.includes(c.replace("-", "")))).toBe(false);
+    }
+  });
+  test("a code works once, in any case or without the dash, and only for its owner", () => {
+    const { codes, hashes } = generateRecoveryCodes(STAFF);
+    const first = codes[0];
+    const left = consumeRecoveryCode(first.toLowerCase().replace("-", ""), STAFF, hashes);
+    expect(left).not.toBeNull();
+    expect(left).toHaveLength(RECOVERY_CODE_COUNT - 1);
+    expect(consumeRecoveryCode(first, STAFF, left!)).toBeNull(); // already used
+    expect(consumeRecoveryCode(codes[1], "44444444-4444-4444-8444-444444444444", hashes)).toBeNull(); // someone else's account
+    expect(consumeRecoveryCode("AAAAA-BBBBB", STAFF, hashes)).toBeNull();
+    expect(consumeRecoveryCode("not a code", STAFF, hashes)).toBeNull();
+    expect(hashRecoveryCode(codes[2], STAFF)).toBe(hashes[2]);
+  });
+});
+
+test.describe("TOTP encryption key", () => {
+  const withEnv = async (env: Record<string, string | undefined>, fn: () => void | Promise<void>) => {
+    const saved = Object.fromEntries(Object.keys(env).map((k) => [k, process.env[k]]));
+    for (const [k, v] of Object.entries(env)) {
+        if (v === undefined) delete process.env[k];
+        else process.env[k] = v;
+      }
+    try {
+      await fn();
+    } finally {
+      for (const [k, v] of Object.entries(saved)) {
+        if (v === undefined) delete process.env[k];
+        else process.env[k] = v;
+      }
+    }
+  };
+  test("a dedicated key makes v2 ciphertext; v1 data still decrypts; wrong key fails", async () => {
+    let v1 = "";
+    await withEnv({ ADMIN_ENCRYPTION_KEY: undefined }, () => {
+      v1 = encryptSecret("SECRETONE");
+      expect(v1.startsWith("v1:")).toBe(true);
+    });
+    await withEnv({ ADMIN_ENCRYPTION_KEY: "k".repeat(40) }, () => {
+      const v2 = encryptSecret("SECRETTWO");
+      expect(v2.startsWith("v2:")).toBe(true);
+      expect(decryptSecret(v2)).toBe("SECRETTWO");
+      expect(decryptSecret(v1)).toBe("SECRETONE"); // older data keeps working
+    });
+    let v2 = "";
+    await withEnv({ ADMIN_ENCRYPTION_KEY: "a".repeat(40) }, () => {
+      v2 = encryptSecret("X");
+    });
+    await withEnv({ ADMIN_ENCRYPTION_KEY: "b".repeat(40) }, () => expect(decryptSecret(v2)).toBeNull());
+    await withEnv({ ADMIN_ENCRYPTION_KEY: undefined }, () => expect(decryptSecret(v2)).toBeNull());
+  });
+  test("in production a missing or short key blocks new enrolments", async () => {
+    await withEnv({ NODE_ENV: "production", ADMIN_ENCRYPTION_KEY: undefined }, () => {
+      expect(isEncryptionConfigured()).toBe(false);
+      expect(() => encryptSecret("x")).toThrow(/ADMIN_ENCRYPTION_KEY/);
+    });
+    await withEnv({ NODE_ENV: "production", ADMIN_ENCRYPTION_KEY: "short" }, () => expect(isEncryptionConfigured()).toBe(false));
+    await withEnv({ NODE_ENV: "production", ADMIN_ENCRYPTION_KEY: "z".repeat(32) }, () => expect(isEncryptionConfigured()).toBe(true));
+  });
+});

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Badge, Button, Input, useToast } from "@/components/admin/ui";
 import { passwordSchema, pinSchema, totpCodeSchema } from "@/lib/schemas/admin";
 
-type Me = { id: string; name: string; role: string; emergency: boolean; twoFactorDone: boolean; totpEnabled: boolean; hasPin: boolean };
+type Me = { id: string; name: string; role: string; emergency: boolean; twoFactorDone: boolean; totpEnabled: boolean; hasPin: boolean; recoveryCodesLeft: number };
 
 async function call(body: object) {
   const res = await fetch("/api/admin/account/security", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -24,6 +24,10 @@ export default function AccountPage() {
   const [next, setNext] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [forced, setForced] = useState(false);
+  const [recovered, setRecovered] = useState(false);
+  const [codes, setCodes] = useState<string[] | null>(null);
+  const [saved, setSaved] = useState(false);
+  const [regenCode, setRegenCode] = useState("");
 
   const load = () =>
     fetch("/api/admin/me")
@@ -32,7 +36,11 @@ export default function AccountPage() {
 
   useEffect(() => {
     load();
-    queueMicrotask(() => setForced(new URLSearchParams(window.location.search).get("setup") === "1"));
+    queueMicrotask(() => {
+      const sp = new URLSearchParams(window.location.search);
+      setForced(sp.get("setup") === "1");
+      setRecovered(sp.get("recovered") === "1");
+    });
   }, []);
 
   if (!me) return <p className="text-[13px] text-[var(--ink-dim)]">Loading…</p>;
@@ -52,7 +60,33 @@ export default function AccountPage() {
     setSetup(null);
     setCode("");
     toast("Two-factor authentication is on");
+    setCodes(data.recoveryCodes as string[]); // shown once; the server keeps only hashes
+    setSaved(false);
     await load();
+  };
+  const regenerate = async () => {
+    const parsed = totpCodeSchema.safeParse(regenCode);
+    if (!parsed.success) return setErrors({ regen: parsed.error.issues[0].message });
+    const { ok, data } = await call({ action: "recovery-regenerate", code: parsed.data });
+    if (!ok) return setErrors({ regen: data.error || "Wrong code" });
+    setErrors({});
+    setRegenCode("");
+    setCodes(data.recoveryCodes as string[]);
+    setSaved(false);
+    await load();
+  };
+  const downloadCodes = () => {
+    if (!codes) return;
+    const text = `Rasakatha admin: 2FA recovery codes for ${me?.name}\nEach code works once. Keep them somewhere safe (not on the same phone).\n\n${codes.join("\n")}\n`;
+    const url = URL.createObjectURL(new Blob([text], { type: "text/plain" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "rasakatha-recovery-codes.txt";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+  const finishCodes = () => {
+    setCodes(null);
     router.refresh();
     if (forced) router.push("/admin");
   };
@@ -90,6 +124,35 @@ export default function AccountPage() {
 
       {!me.emergency && (
         <>
+          {recovered && (
+            <p role="status" className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-[13px] text-[var(--ink)]">
+              You signed in with a recovery code ({me.recoveryCodesLeft} left). If you have a new phone, set up two-factor again below, and make a fresh set of codes.
+            </p>
+          )}
+
+          {codes && (
+            <section aria-label="Recovery codes" className="rounded-2xl border border-accent/40 bg-card p-6">
+              <h2 className="text-[15px] font-bold text-[var(--ink)]">Save your recovery codes</h2>
+              <p className="mt-1.5 text-[13px] text-[var(--ink-dim)]">If you lose your phone, each of these codes lets you sign in <b>once</b>. They are shown only now. Keep them somewhere safe, not on the same phone.</p>
+              <ul className="mt-4 grid grid-cols-2 gap-2 font-mono text-[14px] text-[var(--ink)]">
+                {codes.map((c) => (
+                  <li key={c} className="rounded-lg bg-[var(--surface-tint)] px-3 py-2">{c}</li>
+                ))}
+              </ul>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Button onClick={downloadCodes}>Download .txt</Button>
+                <Button onClick={() => navigator.clipboard?.writeText(codes.join("\n")).then(() => toast("Codes copied"))}>Copy</Button>
+              </div>
+              <label className="mt-4 flex min-h-11 items-center gap-2.5 text-[13.5px] text-[var(--ink)]">
+                <input type="checkbox" checked={saved} onChange={(e) => setSaved(e.target.checked)} className="h-5 w-5 accent-accent" />
+                I have saved these codes
+              </label>
+              <Button variant="primary" className="mt-2" disabled={!saved} onClick={finishCodes}>
+                Continue
+              </Button>
+            </section>
+          )}
+
           {forced && !me.twoFactorDone && (
             <p role="alert" className="rounded-xl border border-accent/40 bg-accent/10 p-3 text-[13px] text-[var(--ink)]">
               Owners and managers must turn on two-factor authentication before using the admin. It takes a minute.
@@ -120,6 +183,20 @@ export default function AccountPage() {
               </div>
             )}
           </section>
+
+          {me.totpEnabled && !codes && (
+            <section className="rounded-2xl border border-[var(--border)] bg-card p-6">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="text-[15px] font-bold text-[var(--ink)]">Recovery codes</h2>
+                <Badge tone={me.recoveryCodesLeft > 2 ? "success" : "warning"}>{me.recoveryCodesLeft} left</Badge>
+              </div>
+              <p className="mt-1.5 text-[13px] text-[var(--ink-dim)]">One-time codes for when you can&apos;t use your authenticator app. Making a new set cancels the old ones.</p>
+              <div className="mt-4 flex max-w-xs flex-col gap-3">
+                <Input label="Current 6-digit code" inputMode="numeric" maxLength={6} value={regenCode} onChange={(e) => setRegenCode(e.target.value.replace(/\D/g, ""))} error={errors.regen} />
+                <Button onClick={regenerate}>Make new recovery codes</Button>
+              </div>
+            </section>
+          )}
 
           {(me.role === "cashier" || me.role === "stock") && (
             <section className="rounded-2xl border border-[var(--border)] bg-card p-6">

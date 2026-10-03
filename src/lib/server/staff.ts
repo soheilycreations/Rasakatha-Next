@@ -11,12 +11,13 @@ export type StaffRow = {
   pin_hash: string | null;
   totp_secret: string | null;
   totp_enabled: boolean;
+  recovery_codes: string[] | null;
   active: boolean;
   created_at: string;
   last_login_at: string | null;
 };
 
-export const STAFF_COLUMNS = "id,email,full_name,role,pin_hash,totp_secret,totp_enabled,active,created_at,last_login_at";
+export const STAFF_COLUMNS = "id,email,full_name,role,pin_hash,totp_secret,totp_enabled,recovery_codes,active,created_at,last_login_at";
 
 // ---- readiness: the staff table comes from supabase/admin-phase-0.sql --------------------------
 let readiness: { at: number; ready: boolean; owners: number } | null = null;
@@ -90,6 +91,7 @@ export const publicStaff = (s: StaffRow) => ({
   active: s.active,
   hasPin: !!s.pin_hash,
   totpEnabled: s.totp_enabled,
+  recoveryCodesLeft: s.recovery_codes?.length ?? 0,
   createdAt: s.created_at,
   lastLoginAt: s.last_login_at,
 });

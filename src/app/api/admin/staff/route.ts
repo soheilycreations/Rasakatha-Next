@@ -68,7 +68,7 @@ export async function PATCH(request: Request) {
   if (d.role !== undefined) patch.role = d.role;
   if (d.active !== undefined) patch.active = d.active;
   if (d.pin !== undefined) patch.pin_hash = d.pin === null ? null : hashPin(d.pin);
-  if (d.resetTotp) Object.assign(patch, { totp_secret: null, totp_enabled: false });
+  if (d.resetTotp) Object.assign(patch, { totp_secret: null, totp_enabled: false, recovery_codes: [] });
   if (Object.keys(patch).length) {
     const { error } = await supabase().from("staff").update(patch).eq("id", d.id);
     if (error) return NextResponse.json({ error: "Couldn't update" }, { status: 500 });
@@ -88,5 +88,15 @@ export async function PATCH(request: Request) {
     before: { fullName: current.full_name, role: current.role, active: current.active, pin: !!current.pin_hash, totp: current.totp_enabled },
     after: { fullName: d.fullName, role: d.role, active: d.active, pinChanged: d.pin !== undefined, passwordReset: !!d.password, totpReset: !!d.resetTotp },
   });
+  if (d.resetTotp) {
+    // its own audit row: resetting someone's two-factor is a sensitive action
+    await audit({
+      action: "staff.totp_reset",
+      entity: "staff",
+      entityId: d.id,
+      before: { totp: current.totp_enabled, recoveryCodesLeft: current.recovery_codes?.length ?? 0 },
+      note: `two-factor reset for ${current.full_name} by ${auth.session.name}`,
+    });
+  }
   return NextResponse.json({ ok: true });
 }

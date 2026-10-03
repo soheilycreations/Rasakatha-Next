@@ -12,7 +12,9 @@ export const pinSchema = z.string().regex(/^\d{4,6}$/, "PIN must be 4 to 6 digit
 
 export const loginSchema = z.object({ email: emailSchema, password: z.string().min(1).max(200) });
 export const emergencyLoginSchema = z.object({ password: z.string().min(1).max(200) });
-export const totpLoginSchema = z.object({ ticket: z.string().min(10).max(600), code: totpCodeSchema });
+// `code` is the 6-digit authenticator code OR a one-time recovery code (XXXXX-XXXXX)
+export const recoveryCodeSchema = z.string().trim().regex(/^[A-Za-z0-9]{5}-?[A-Za-z0-9]{5}$/, "That isn't a recovery code");
+export const totpLoginSchema = z.object({ ticket: z.string().min(10).max(600), code: z.union([totpCodeSchema, recoveryCodeSchema]) });
 export const pinSwitchSchema = z.object({ staffId: z.string().uuid(), pin: pinSchema });
 
 export const staffCreateSchema = z.object({

@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import logoLight from "@/assets/rasakatha-logo-light-mode.png";
 import logoDark from "@/assets/rasakatha-logo-dark-mode.png";
 import { Button, Input } from "@/components/admin/ui";
-import { loginSchema, totpCodeSchema } from "@/lib/schemas/admin";
+import { loginSchema, recoveryCodeSchema, totpCodeSchema } from "@/lib/schemas/admin";
 
 type Step = "credentials" | "totp" | "emergency";
 
@@ -17,6 +17,7 @@ export default function AdminLoginPage() {
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
   const [ticket, setTicket] = useState("");
+  const [useRecovery, setUseRecovery] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [options, setOptions] = useState<{ staffReady: boolean; emergencyAllowed: boolean } | null>(null);
@@ -68,7 +69,7 @@ export default function AdminLoginPage() {
         setStep("totp");
       } else finish(data);
     } else if (step === "totp") {
-      const parsed = totpCodeSchema.safeParse(code);
+      const parsed = (useRecovery ? recoveryCodeSchema : totpCodeSchema).safeParse(code);
       if (!parsed.success) return setError(parsed.error.issues[0]?.message ?? "Enter the 6-digit code");
       const data = await post("/api/admin/login/totp", { ticket, code: parsed.data });
       if (data) finish(data);
@@ -87,7 +88,7 @@ export default function AdminLoginPage() {
         </div>
         <h1 className="text-center font-display text-xl font-bold text-[var(--ink)]">Rasakatha Admin</h1>
         <p className="mt-1 text-center text-[13px] text-[var(--ink-dim)]">
-          {step === "totp" ? "Enter the code from your authenticator app." : step === "emergency" ? "Emergency owner sign-in." : "Sign in to manage your store."}
+          {step === "totp" ? (useRecovery ? "Enter one of your one-time recovery codes." : "Enter the code from your authenticator app.") : step === "emergency" ? "Emergency owner sign-in." : "Sign in to manage your store."}
         </p>
 
         <div className="mt-6 flex flex-col gap-4">
@@ -98,7 +99,11 @@ export default function AdminLoginPage() {
             </>
           )}
           {step === "totp" && (
-            <Input label="6-digit code" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))} autoFocus />
+            useRecovery ? (
+              <Input label="Recovery code" autoComplete="off" autoCapitalize="characters" maxLength={11} placeholder="XXXXX-XXXXX" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} autoFocus hint="Each code works once." />
+            ) : (
+              <Input label="6-digit code" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))} autoFocus />
+            )
           )}
           {step === "emergency" && (
             <Input label="Emergency password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} autoFocus hint="Only works while the emergency login is enabled." />
@@ -114,6 +119,11 @@ export default function AdminLoginPage() {
           {loading ? "Signing in…" : step === "totp" ? "Verify" : "Sign In"}
         </Button>
 
+        {step === "totp" && (
+          <button type="button" onClick={() => { setUseRecovery((v) => !v); setCode(""); setError(""); }} className="mt-3 w-full text-center text-[12.5px] font-semibold text-accent-blue hover:opacity-80">
+            {useRecovery ? "Use my authenticator app instead" : "Lost your phone? Use a recovery code"}
+          </button>
+        )}
         {step !== "credentials" && options?.staffReady && (
           <button type="button" onClick={() => { setStep("credentials"); setError(""); setCode(""); }} className="mt-3 w-full text-center text-[12.5px] font-semibold text-[var(--ink-dim)] hover:text-[var(--ink)]">
             ← Back to email sign-in

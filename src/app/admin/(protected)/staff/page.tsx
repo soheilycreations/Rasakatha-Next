@@ -5,7 +5,7 @@ import { Badge, Button, DataTable, Dialog, Input, Select, useToast, type Column 
 import { ROLES, ROLE_LABELS, type Role } from "@/lib/permissions";
 import { staffCreateSchema } from "@/lib/schemas/admin";
 
-type Staff = { id: string; email: string; fullName: string; role: Role; active: boolean; hasPin: boolean; totpEnabled: boolean; lastLoginAt: string | null };
+type Staff = { id: string; email: string; fullName: string; role: Role; active: boolean; hasPin: boolean; totpEnabled: boolean; recoveryCodesLeft: number; lastLoginAt: string | null };
 
 export default function StaffPage() {
   const { toast } = useToast();
@@ -62,6 +62,7 @@ export default function StaffPage() {
     { key: "role", header: "Role", width: "130px", sortValue: (s) => s.role, cell: (s) => <Badge tone={s.role === "owner" ? "accent" : "neutral"}>{ROLE_LABELS[s.role]}</Badge> },
     { key: "status", header: "Status", width: "110px", sortValue: (s) => Number(s.active), cell: (s) => <Badge tone={s.active ? "success" : "warning"}>{s.active ? "Active" : "Deactivated"}</Badge> },
     { key: "2fa", header: "2FA", width: "90px", hideBelow: "md", cell: (s) => (s.totpEnabled ? "On" : s.role === "owner" || s.role === "manager" ? "Not yet" : "n/a") },
+    { key: "recovery", header: "Recovery codes", width: "130px", hideBelow: "lg", hiddenByDefault: true, cell: (s) => (s.totpEnabled ? `${s.recoveryCodesLeft} left` : "-") },
     { key: "pin", header: "PIN", width: "80px", hideBelow: "md", cell: (s) => (s.hasPin ? "Set" : "-") },
     { key: "last", header: "Last sign-in", width: "150px", hideBelow: "lg", sortValue: (s) => s.lastLoginAt ?? "", cell: (s) => (s.lastLoginAt ? new Date(s.lastLoginAt).toLocaleString("en-GB") : "Never") },
   ];
@@ -116,8 +117,8 @@ export default function StaffPage() {
                 {editing.active ? "Deactivate account" : "Reactivate account"}
               </Button>
               {editing.totpEnabled && (
-                <Button onClick={async () => { if (await patch({ id: editing.id, resetTotp: true }, "Two-factor reset: they set it up again at next sign-in")) setEditing({ ...editing, totpEnabled: false }); }}>
-                  Reset two-factor
+                <Button onClick={async () => { if (window.confirm(`Reset two-factor for ${editing.fullName}? Their authenticator and recovery codes stop working and they set it up again at the next sign-in. This is recorded in the audit log.`) && (await patch({ id: editing.id, resetTotp: true }, "Two-factor reset: they set it up again at next sign-in"))) setEditing({ ...editing, totpEnabled: false, recoveryCodesLeft: 0 }); }}>
+                  Reset two-factor (lost phone)
                 </Button>
               )}
             </div>

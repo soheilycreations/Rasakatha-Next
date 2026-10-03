@@ -16,6 +16,7 @@ export async function GET() {
     twoFactorDone: s.tf,
     totpEnabled: staff?.totp_enabled ?? false,
     hasPin: !!staff?.pin_hash,
+    recoveryCodesLeft: staff?.recovery_codes?.length ?? 0,
     permissions: permissionsFor(s.role),
   });
 }

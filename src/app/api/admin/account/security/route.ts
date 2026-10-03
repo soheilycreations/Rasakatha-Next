@@ -5,16 +5,18 @@ import { currentSession } from "@/lib/server/guard";
 import { audit } from "@/lib/server/audit";
 import { rateLimit } from "@/lib/server/rateLimit";
 import { forgetStaff, getStaff, hashPin, verifyStaffPassword } from "@/lib/server/staff";
-import { decryptSecret, encryptSecret, generateSecret, otpauthUrl, verifyTotp } from "@/lib/server/totp";
+import { decryptSecret, encryptSecret, generateSecret, isEncryptionConfigured, otpauthUrl, verifyTotp } from "@/lib/server/totp";
 import { setSessionCookie } from "@/lib/server/sessionCookie";
 import { authClient } from "@/lib/server/customerAuth";
 import { supabase } from "@/lib/server/supabase";
 import { passwordSchema, pinSchema, totpCodeSchema } from "@/lib/schemas/admin";
+import { generateRecoveryCodes } from "@/lib/server/recovery";
 
 // A staff member's own security settings: two-factor enrolment, their till PIN and password.
 const actionSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("totp-start") }),
   z.object({ action: z.literal("totp-confirm"), code: totpCodeSchema }),
+  z.object({ action: z.literal("recovery-regenerate"), code: totpCodeSchema }),
   z.object({ action: z.literal("set-pin"), pin: pinSchema }),
   z.object({ action: z.literal("change-password"), currentPassword: z.string().min(1), newPassword: passwordSchema }),
 ]);
@@ -34,6 +36,7 @@ export async function POST(request: Request) {
   const actor = { id: staff.id, name: staff.full_name, role: staff.role };
 
   if (body.action === "totp-start") {
+    if (!isEncryptionConfigured()) return NextResponse.json({ error: "ADMIN_ENCRYPTION_KEY is not set on the server." }, { status: 503 });
     const secret = generateSecret();
     await supabase().from("staff").update({ totp_secret: encryptSecret(secret), totp_enabled: false }).eq("id", staff.id);
     forgetStaff(staff.id);
@@ -44,13 +47,25 @@ export async function POST(request: Request) {
   if (body.action === "totp-confirm") {
     const secret = staff.totp_secret ? decryptSecret(staff.totp_secret) : null;
     if (!secret || !verifyTotp(secret, body.code)) return NextResponse.json({ error: "That code isn't right. Check the time on your phone." }, { status: 400 });
-    await supabase().from("staff").update({ totp_enabled: true }).eq("id", staff.id);
+    // 10 one-time recovery codes: shown once now, stored only as hashes
+    const { codes, hashes } = generateRecoveryCodes(staff.id);
+    await supabase().from("staff").update({ totp_enabled: true, recovery_codes: hashes }).eq("id", staff.id);
     forgetStaff(staff.id);
-    await audit({ action: "staff.totp_enabled", entity: "staff", entityId: staff.id, actor });
+    await audit({ action: "staff.totp_enabled", entity: "staff", entityId: staff.id, note: "10 recovery codes issued", actor });
     // 2FA is done: reissue the session without the setup lock
-    const res = NextResponse.json({ ok: true });
+    const res = NextResponse.json({ ok: true, recoveryCodes: codes });
     await setSessionCookie(res, { sid: staff.id, role: staff.role, name: staff.full_name, tf: true });
     return res;
+  }
+
+  if (body.action === "recovery-regenerate") {
+    const secret = staff.totp_secret ? decryptSecret(staff.totp_secret) : null;
+    if (!staff.totp_enabled || !secret || !verifyTotp(secret, body.code)) return NextResponse.json({ error: "That code isn't right" }, { status: 400 });
+    const { codes, hashes } = generateRecoveryCodes(staff.id);
+    await supabase().from("staff").update({ recovery_codes: hashes }).eq("id", staff.id);
+    forgetStaff(staff.id);
+    await audit({ action: "staff.recovery_codes_regenerated", entity: "staff", entityId: staff.id, note: "old codes no longer work", actor });
+    return NextResponse.json({ ok: true, recoveryCodes: codes });
   }
 
   if (body.action === "set-pin") {
