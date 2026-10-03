@@ -1,4 +1,7 @@
 import { NextResponse } from "next/server";
+import { audit } from "@/lib/server/audit";
+import { parseBody } from "@/lib/server/validate";
+import { reviewPatchSchema } from "@/lib/schemas/admin";
 import { supabase } from "@/lib/server/supabase";
 import { getCatalog } from "@/lib/catalog";
 import { syncBookRating } from "@/lib/server/reviews";
@@ -31,13 +34,15 @@ export async function GET() {
 }
 
 export async function PATCH(request: Request) {
-  const body = await request.json().catch(() => null);
-  const id = String(body?.id ?? "");
-  if (!id || typeof body?.approved !== "boolean") return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+  const parsedBody = await parseBody(request, reviewPatchSchema);
+  if (!parsedBody.ok) return parsedBody.response;
+  const body = parsedBody.data;
+  const id = body.id;
   const { data, error } = await supabase().from("reviews").update({ approved: body.approved }).eq("id", id).select("book_id").maybeSingle();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!data) return NextResponse.json({ error: "Review not found" }, { status: 404 });
   await syncBookRating(data.book_id);
+  await audit({ action: body.approved ? "reviews.approve" : "reviews.hide", entity: "review", entityId: id, after: { approved: body.approved } });
   return NextResponse.json({ ok: true });
 }
 
@@ -47,5 +52,6 @@ export async function DELETE(request: Request) {
   const { data, error } = await supabase().from("reviews").delete().eq("id", id).select("book_id").maybeSingle();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (data) await syncBookRating(data.book_id);
+  await audit({ action: "reviews.delete", entity: "review", entityId: id, note: "moderation" });
   return NextResponse.json({ ok: true });
 }

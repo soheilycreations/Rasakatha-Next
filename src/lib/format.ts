@@ -1,6 +1,5 @@
-export function money(n: number): string {
-  return "Rs. " + Math.round(n).toLocaleString("en-US");
-}
+// The one money formatter lives in ./money (cents-safe); re-exported so existing imports keep working.
+export { money } from "./money";
 
 export function discountPercent(regularPrice: number, salePrice: number): number {
   if (regularPrice <= 0) return 0;

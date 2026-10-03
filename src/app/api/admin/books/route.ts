@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/server/supabase";
+import { audit } from "@/lib/server/audit";
+import { parseBody } from "@/lib/server/validate";
+import { archiveBookSchema, bookInputSchema } from "@/lib/schemas/admin";
 import { newestFirst } from "@/lib/bookOrder";
 import { bookToRow, getCatalog, invalidateCatalog, paginate, rowToBook, withoutOptionalColumns, type BookLanguage, type CatalogBook } from "@/lib/catalog";
 
@@ -57,16 +60,21 @@ export async function GET(request: Request) {
     return NextResponse.json({ items: p.items, total: p.total, page: p.page, pageCount: p.pageCount, counts });
   }
 
-  let query = supabase().from("books").select("*", { count: "exact" });
-  if (search) {
-    // Strip characters that would break PostgREST's or() filter syntax.
-    const term = search.replace(/[,()%*\\]/g, " ");
-    query = query.or(`title.ilike.%${term}%,author.ilike.%${term}%,id.eq.${term}`);
+  const archivedOnly = filter === "archived";
+  // strip characters that would break PostgREST's or() filter syntax
+  const term = search.replace(/[,()%*\\]/g, " ");
+  const run = (withArchiveColumn: boolean) => {
+    let q = supabase().from("books").select("*", { count: "exact" });
+    if (withArchiveColumn) q = archivedOnly ? q.not("archived_at", "is", null) : q.is("archived_at", null);
+    if (search) q = q.or(`title.ilike.%${term}%,author.ilike.%${term}%,isbn.ilike.%${term}%,id.eq.${term}`);
+    return q.order("created_at", { ascending: false }).order("id").range(from, from + limit - 1);
+  };
+  let { data, count, error } = await run(true);
+  // supabase/admin-phase-0.sql (the archived_at column) hasn't been run yet: list everything, archive is unavailable
+  if (error && (error.code === "42703" || error.code === "PGRST204")) {
+    if (archivedOnly) return NextResponse.json({ items: [], total: 0, page, pageCount: 1, counts });
+    ({ data, count, error } = await run(false));
   }
-  const { data, count, error } = await query
-    .order("created_at", { ascending: false })
-    .order("id")
-    .range(from, from + limit - 1);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   const total = count ?? 0;
@@ -80,7 +88,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const body = (await request.json()) as Partial<CatalogBook>;
+  const parsedBody = await parseBody(request, bookInputSchema);
+  if (!parsedBody.ok) return parsedBody.response;
+  const body = parsedBody.data as Partial<CatalogBook>;
   const book: CatalogBook = {
     id: body.id?.trim() || Date.now().toString(),
     title: body.title || "Untitled",
@@ -115,11 +125,15 @@ export async function POST(request: Request) {
     );
   }
   invalidateCatalog();
+  await audit({ action: "books.create", entity: "book", entityId: book.id, after: { ...book, blurb: undefined } });
   return NextResponse.json(book);
 }
 
 export async function PUT(request: Request) {
-  const body = (await request.json()) as CatalogBook;
+  const parsedBody = await parseBody(request, bookInputSchema);
+  if (!parsedBody.ok) return parsedBody.response;
+  if (!parsedBody.data.id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
+  const body = parsedBody.data as unknown as CatalogBook;
   const { data: existing } = await supabase().from("books").select("*").eq("id", body.id).maybeSingle();
   if (!existing) return NextResponse.json({ error: "Book not found" }, { status: 404 });
 
@@ -139,17 +153,42 @@ export async function PUT(request: Request) {
   }
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   invalidateCatalog();
+  await audit({
+    action: "books.update",
+    entity: "book",
+    entityId: merged.id,
+    before: { ...rowToBook(existing as Row), blurb: undefined },
+    after: { ...merged, blurb: undefined },
+    note: rowToBook(existing as Row).blurb !== merged.blurb ? "description changed" : undefined,
+  });
   return NextResponse.json(merged);
 }
 
+// Never hard-delete business data: "delete" archives the book (hidden from the store, kept with its reason).
 export async function DELETE(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const id = searchParams.get("id");
-  if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
+  const sp = new URL(request.url).searchParams;
+  const parsed = archiveBookSchema.safeParse({ id: sp.get("id") ?? "", reason: sp.get("reason") ?? "" });
+  if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Missing id or reason" }, { status: 400 });
 
-  const { data, error } = await supabase().from("books").delete().eq("id", id).select("id");
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  if (!data || data.length === 0) return NextResponse.json({ error: "Book not found" }, { status: 404 });
+  const { data: before } = await supabase().from("books").select("*").eq("id", parsed.data.id).maybeSingle();
+  if (!before) return NextResponse.json({ error: "Book not found" }, { status: 404 });
+  const { error } = await supabase().from("books").update({ archived_at: new Date().toISOString(), archive_reason: parsed.data.reason }).eq("id", parsed.data.id);
+  if (error) {
+    const missing = error.code === "42703" || error.code === "PGRST204";
+    return NextResponse.json({ error: missing ? "Archiving needs supabase/admin-phase-0.sql to be run." : error.message }, { status: missing ? 503 : 500 });
+  }
   invalidateCatalog();
+  await audit({ action: "books.archive", entity: "book", entityId: parsed.data.id, before: { ...rowToBook(before as Row), blurb: undefined }, note: parsed.data.reason });
+  return NextResponse.json({ ok: true });
+}
+
+// Restore an archived book.
+export async function PATCH(request: Request) {
+  const body = (await request.json().catch(() => null)) as { id?: string } | null;
+  if (!body?.id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
+  const { error } = await supabase().from("books").update({ archived_at: null, archive_reason: null }).eq("id", body.id);
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  invalidateCatalog();
+  await audit({ action: "books.restore", entity: "book", entityId: body.id });
   return NextResponse.json({ ok: true });
 }

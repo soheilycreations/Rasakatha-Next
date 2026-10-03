@@ -1,4 +1,7 @@
 import { NextResponse } from "next/server";
+import { audit } from "@/lib/server/audit";
+import { parseBody } from "@/lib/server/validate";
+import { categoryPutSchema } from "@/lib/schemas/admin";
 import { supabase } from "@/lib/server/supabase";
 import { getCategories } from "@/lib/catalog";
 
@@ -17,8 +20,9 @@ export async function GET() {
 }
 
 export async function PUT(request: Request) {
-  const { name, image, order } = (await request.json()) as { name: string; image?: string; order?: number };
-  if (!name) return NextResponse.json({ error: "Missing category name" }, { status: 400 });
+  const parsedBody = await parseBody(request, categoryPutSchema);
+  if (!parsedBody.ok) return parsedBody.response;
+  const { name, image, order } = parsedBody.data;
 
   const { data: current } = await supabase().from("category_meta").select("*").eq("name", name).maybeSingle();
   const next = {
@@ -28,5 +32,6 @@ export async function PUT(request: Request) {
   };
   const { error } = await supabase().from("category_meta").upsert(next);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  await audit({ action: "categories.update", entity: "category", entityId: name, before: current, after: next });
   return NextResponse.json({ ok: true, name, image: next.image, order: next.order_index });
 }

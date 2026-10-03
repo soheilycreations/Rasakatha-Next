@@ -1,242 +1,206 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { money } from "@/lib/format";
 import { ORDER_STATUS_STEPS, type OrderStatus, type StoredOrder } from "@/lib/orders";
-import Toast from "../Toast";
+import { totalSavings } from "@/lib/savings";
+import { Badge, Button, DataTable, Drawer, EmptyState, Input, Select, useToast, type Column } from "@/components/admin/ui";
 
-const PAYMENT_LABELS: Record<string, string> = {
-  cod: "Cash on Delivery",
-  payhere: "PayHere",
-  koko: "Koko BNPL",
-  mintpay: "MintPay",
-};
-
-const STATUS_COLORS: Record<OrderStatus, string> = {
-  processing: "#00aef0",
-  packed: "#7c5cff",
-  shipped: "#f0a500",
-  delivered: "#2f5a3a",
-};
+const PAYMENT_LABELS: Record<string, string> = { cod: "Cash on Delivery", payhere: "PayHere", koko: "Koko BNPL", mintpay: "MintPay" };
+const STATUS_TONE: Record<OrderStatus, "info" | "neutral" | "warning" | "success"> = { processing: "info", packed: "neutral", shipped: "warning", delivered: "success" };
 
 // The customer typed their own town (not in the Sri Lanka Post list): check it before dispatch.
 function TownFlag() {
-  return (
-    <span className="mt-1 inline-block rounded-full bg-amber-500/15 px-2 py-0.5 text-[10.5px] font-bold uppercase text-amber-600">
-      Town not in list: confirm address
-    </span>
-  );
+  return <Badge tone="warning">Town not in list: confirm address</Badge>;
 }
 
 export default function AdminOrdersPage() {
+  const { toast } = useToast();
   const [orders, setOrders] = useState<StoredOrder[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pageCount, setPageCount] = useState(1);
   const [loading, setLoading] = useState(true);
-  const [expanded, setExpanded] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<OrderStatus | "all">("all");
-  const [toast, setToast] = useState("");
+  const [debounced, setDebounced] = useState("");
+  const [status, setStatus] = useState<OrderStatus | "all">("all");
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [deepLink, setDeepLink] = useState<string | null>(null);
 
-  const load = () => {
-    fetch("/api/admin/orders")
-      .then((r) => r.json())
-      .then((data) => {
-        setOrders(data);
-        setLoading(false);
-      });
-  };
-
-  useEffect(load, []);
+  // deep link from the command palette: ?open=<order id>
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get("open");
+    if (id) queueMicrotask(() => { setDeepLink(id); setOpenId(id); });
+  }, []);
 
   useEffect(() => {
-    if (!toast) return;
-    const id = setTimeout(() => setToast(""), 2500);
-    return () => clearTimeout(id);
-  }, [toast]);
+    const t = setTimeout(() => {
+      setDebounced(search);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [search]);
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return orders.filter((o) => {
-      if (statusFilter !== "all" && o.status !== statusFilter) return false;
-      if (!q) return true;
-      return (
-        o.id.toLowerCase().includes(q) ||
-        o.customer.name.toLowerCase().includes(q) ||
-        o.customer.phone.replace(/\s+/g, "").includes(q.replace(/\s+/g, ""))
-      );
-    });
-  }, [orders, search, statusFilter]);
+  const load = useCallback(() => {
+    const p = new URLSearchParams({ page: String(page), limit: "25", search: debounced });
+    if (status !== "all") p.set("status", status);
+    if (deepLink) p.set("open", deepLink);
+    queueMicrotask(() => setLoading(true));
+    fetch(`/api/admin/orders?${p}`)
+      .then((r) => r.json())
+      .then((d: { items: StoredOrder[]; total: number; pageCount: number }) => {
+        setOrders(d.items ?? []);
+        setTotal(d.total ?? 0);
+        setPageCount(d.pageCount ?? 1);
+        setLoading(false);
+      });
+  }, [page, debounced, status, deepLink]);
 
-  const updateStatus = async (id: string, status: OrderStatus) => {
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const updateStatus = async (id: string, next: OrderStatus) => {
     const previous = orders.find((o) => o.id === id)?.status;
-    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status } : o)));
-    const res = await fetch("/api/admin/orders", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, status }),
-    });
+    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status: next } : o)));
+    const res = await fetch("/api/admin/orders", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, status: next }) });
     if (!res.ok && previous) {
       setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status: previous } : o)));
-      setToast("Could not update status. Try again.");
+      toast("Could not update the status. Try again.", { tone: "error" });
+    } else {
+      toast(`Order #${id} is now ${ORDER_STATUS_STEPS.find((s) => s.key === next)?.label}`, {
+        undo: previous
+          ? async () => {
+              await fetch("/api/admin/orders", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, status: previous }) });
+              setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status: previous } : o)));
+            }
+          : undefined,
+      });
     }
   };
 
+  const open = orders.find((o) => o.id === openId) ?? null;
+
+  const columns: Column<StoredOrder>[] = [
+    { key: "id", header: "Order", width: "130px", sortValue: (o) => o.createdAt, cell: (o) => <span className="font-semibold">#{o.id}</span> },
+    {
+      key: "customer",
+      header: "Customer",
+      sortValue: (o) => o.customer.name.toLowerCase(),
+      cell: (o) => (
+        <div className="min-w-0">
+          <div className="truncate">{o.customer.name}</div>
+          <div className="truncate text-[12px] text-[var(--ink-dim)]">{o.customer.phone}</div>
+        </div>
+      ),
+    },
+    {
+      key: "payment",
+      header: "Payment",
+      width: "170px",
+      hideBelow: "md",
+      cell: (o) => (
+        <span className="flex flex-wrap items-center gap-1.5">
+          <span className="text-[var(--ink-dim)]">{PAYMENT_LABELS[o.payment] ?? o.payment}</span>
+          {o.payment !== "cod" && o.paymentStatus && <Badge tone={o.paymentStatus === "paid" ? "success" : o.paymentStatus === "failed" ? "accent" : "warning"}>{o.paymentStatus}</Badge>}
+        </span>
+      ),
+    },
+    { key: "total", header: "Total", width: "110px", align: "right", sortValue: (o) => o.total, cell: (o) => <span className="font-semibold">{money(o.total)}</span> },
+    { key: "status", header: "Status", width: "120px", sortValue: (o) => o.status, cell: (o) => <Badge tone={STATUS_TONE[o.status]}>{ORDER_STATUS_STEPS.find((s) => s.key === o.status)?.label}</Badge> },
+    { key: "date", header: "Date", width: "100px", hideBelow: "lg", sortValue: (o) => o.createdAt, cell: (o) => <span className="text-[12px] text-[var(--ink-dim)]">{new Date(o.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</span> },
+  ];
+
+  const place = (o: StoredOrder) => (o.customer.isGift ? { name: o.customer.giftName, phone: o.customer.giftPhone, address: o.customer.giftAddress, city: o.customer.giftCity, district: o.customer.giftDistrict, flag: o.customer.giftTownNotInList } : { name: o.customer.name, phone: o.customer.phone, address: o.customer.address, city: o.customer.city, district: o.customer.district, flag: o.customer.townNotInList });
+
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-5">
       <div>
-        <h1 className="font-display text-2xl font-bold text-[var(--ink)]">Orders</h1>
-        <p className="mt-1 text-[13.5px] text-[var(--ink-faint)]">
-          {orders.length} order{orders.length === 1 ? "" : "s"} placed so far.
+        <h1 className="font-display text-2xl font-bold text-[var(--ink)]">Web orders</h1>
+        <p className="mt-1 text-[13.5px] text-[var(--ink-dim)]">
+          {total.toLocaleString()} order{total === 1 ? "" : "s"}{status !== "all" || debounced ? " match" : " placed so far"}.
         </p>
       </div>
 
-      {!loading && orders.length > 0 && (
-        <div className="flex flex-wrap items-center gap-3">
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by order ID, customer, or phone…"
-            className="w-full max-w-sm rounded-xl border border-[var(--border)] bg-[var(--surface-tint)] px-3.5 py-2.5 text-[13.5px] text-[var(--ink)] placeholder:text-[var(--ink-faint)] focus:outline-none focus:border-accent/50"
-          />
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as OrderStatus | "all")}
-            className="rounded-xl border border-[var(--border)] bg-[var(--surface-tint)] px-3 py-2.5 text-[13px] font-semibold text-[var(--ink)] focus:outline-none"
-          >
-            <option value="all" style={{ color: "#111", background: "#fff" }}>All statuses</option>
-            {ORDER_STATUS_STEPS.map((s) => (
-              <option key={s.key} value={s.key} style={{ color: "#111", background: "#fff" }}>
-                {s.label}
-              </option>
-            ))}
-          </select>
+      <div className="grid max-w-2xl gap-3 sm:grid-cols-[2fr_1fr]">
+        <Input label="Search orders" type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Order ID, customer or phone" />
+        <Select label="Status" value={status} onChange={(e) => { setPage(1); setStatus(e.target.value as OrderStatus | "all"); }}>
+          <option value="all">All statuses</option>
+          {ORDER_STATUS_STEPS.map((s) => (
+            <option key={s.key} value={s.key}>{s.label}</option>
+          ))}
+        </Select>
+      </div>
+
+      <DataTable
+        columns={columns}
+        rows={orders}
+        rowKey={(o) => o.id}
+        loading={loading}
+        caption="Web orders"
+        onRowClick={(o) => setOpenId(o.id)}
+        storageKey="orders"
+        empty={<EmptyState title="No orders found">{total === 0 && !debounced && status === "all" ? "Placed orders will show up here." : "Nothing matches your search."}</EmptyState>}
+      />
+
+      {pageCount > 1 && (
+        <div className="flex items-center justify-center gap-3 text-[13px] text-[var(--ink-dim)]">
+          <Button size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>← Prev</Button>
+          Page {page} of {pageCount}
+          <Button size="sm" disabled={page >= pageCount} onClick={() => setPage((p) => p + 1)}>Next →</Button>
         </div>
       )}
 
-      {loading ? (
-        <p className="text-[13.5px] text-[var(--ink-faint)]">Loading orders…</p>
-      ) : orders.length === 0 ? (
-        <div className="rounded-2xl border border-[var(--border)] bg-card p-8 text-center text-[13.5px] text-[var(--ink-faint)]">
-          No orders yet — placed orders will show up here.
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="rounded-2xl border border-[var(--border)] bg-card p-8 text-center text-[13.5px] text-[var(--ink-faint)]">
-          No orders match your search.
-        </div>
-      ) : (
-        <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-card">
-          <table className="w-full text-left text-[13px]">
-            <thead>
-              <tr className="border-b border-[var(--border)] text-[var(--ink-faint)]">
-                <th className="px-4 py-3 font-semibold">Order</th>
-                <th className="px-4 py-3 font-semibold">Customer</th>
-                <th className="px-4 py-3 font-semibold">Payment</th>
-                <th className="px-4 py-3 font-semibold">Total</th>
-                <th className="px-4 py-3 font-semibold">Status</th>
-                <th className="px-4 py-3 font-semibold">Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((o) => (
-                <Fragment key={o.id}>
-                  <tr
-                    className="cursor-pointer border-b border-[var(--border)] transition-colors last:border-b-0 hover:bg-[var(--surface-tint)]"
-                    onClick={() => setExpanded(expanded === o.id ? null : o.id)}
-                  >
-                    <td className="px-4 py-3 font-semibold text-[var(--ink)]">#{o.id}</td>
-                    <td className="px-4 py-3 text-[var(--ink-dim)]">
-                      {o.customer.name}
-                      <div className="text-[11px] text-[var(--ink-faint)]">{o.customer.phone}</div>
-                    </td>
-                    <td className="px-4 py-3 text-[var(--ink-dim)]">{PAYMENT_LABELS[o.payment] ?? o.payment}
-                      {o.payment !== "cod" && o.paymentStatus && (
-                        <span
-                          className={`ml-2 rounded-full px-2 py-0.5 text-[10.5px] font-bold uppercase ${
-                            o.paymentStatus === "paid" ? "bg-emerald-500/15 text-[var(--success-text)]" : o.paymentStatus === "failed" ? "bg-accent/15 text-accent" : "bg-amber-500/15 text-amber-500"
-                          }`}
-                        >
-                          {o.paymentStatus}
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 font-semibold text-[var(--ink)]">{money(o.total)}</td>
-                    <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                      <select
-                        value={o.status}
-                        onChange={(e) => updateStatus(o.id, e.target.value as OrderStatus)}
-                        style={{ color: STATUS_COLORS[o.status] }}
-                        className="rounded-lg border border-[var(--border)] bg-[var(--surface-tint)] px-2 py-1 text-[12px] font-semibold focus:outline-none"
-                      >
-                        {ORDER_STATUS_STEPS.map((s) => (
-                          <option key={s.key} value={s.key} style={{ color: "#111", background: "#fff" }}>
-                            {s.label}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                    <td className="px-4 py-3 text-[12px] text-[var(--ink-faint)]">
-                      {new Date(o.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                    </td>
-                  </tr>
-                  {expanded === o.id && (
-                    <tr className="border-b border-[var(--border)] bg-[var(--surface-tint)]">
-                      <td colSpan={6} className="px-4 py-4">
-                        <div className="grid gap-4 sm:grid-cols-2">
-                          <div>
-                            <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-faint)]">
-                              Items
-                            </div>
-                            <div className="flex flex-col gap-1">
-                              {o.items.map((item) => (
-                                <div key={item.id} className="flex justify-between text-[12.5px]">
-                                  <span className="text-[var(--ink-dim)]">
-                                    {item.title} × {item.qty}
-                                  </span>
-                                  <span className="text-[var(--ink)]">
-                                    {item.price != null ? money(item.price * item.qty) : "—"}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                          <div>
-                            <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-faint)]">
-                              Delivery Details
-                            </div>
-                            <div className="text-[12.5px] text-[var(--ink-dim)]">
-                              {o.customer.isGift ? (
-                                <>
-                                  <div className="text-[var(--ink)]">Gift to: {o.customer.giftName}</div>
-                                  <div>{o.customer.giftPhone}</div>
-                                  <div>
-                                    {o.customer.giftAddress}, {o.customer.giftCity}
-                                    {o.customer.giftDistrict ? `, ${o.customer.giftDistrict}` : ""}
-                                  </div>
-                                  {o.customer.giftTownNotInList && <TownFlag />}
-                                </>
-                              ) : (
-                                <>
-                                  <div className="text-[var(--ink)]">{o.customer.email}</div>
-                                  <div>
-                                    {o.customer.address}, {o.customer.city}
-                                    {o.customer.district ? `, ${o.customer.district}` : ""}
-                                  </div>
-                                  {o.customer.townNotInList && <TownFlag />}
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </Fragment>
+      <Drawer
+        open={!!open}
+        onClose={() => setOpenId(null)}
+        title={open ? `Order #${open.id}` : ""}
+        subtitle={open ? `${new Date(open.createdAt).toLocaleString("en-GB")} · ${PAYMENT_LABELS[open.payment] ?? open.payment}` : undefined}
+      >
+        {open && (
+          <div className="flex flex-col gap-6">
+            <Select label="Order status" value={open.status} onChange={(e) => updateStatus(open.id, e.target.value as OrderStatus)}>
+              {ORDER_STATUS_STEPS.map((s) => (
+                <option key={s.key} value={s.key}>{s.label}</option>
               ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+            </Select>
 
-      {toast && <Toast message={toast} />}
+            <section>
+              <h3 className="mb-2 text-[11.5px] font-bold uppercase tracking-wide text-[var(--ink-faint)]">Items</h3>
+              <div className="flex flex-col gap-2">
+                {open.items.map((item) => (
+                  <div key={item.id} className="flex justify-between gap-3 text-[13px]">
+                    <span className="min-w-0 break-words text-[var(--ink-dim)]">{item.title} × {item.qty}</span>
+                    <span className="shrink-0 text-[var(--ink)]">{item.price != null ? money(item.price * item.qty) : "-"}</span>
+                  </div>
+                ))}
+              </div>
+              <dl className="mt-3 grid grid-cols-[1fr_auto] gap-y-1 border-t border-[var(--border)] pt-3 text-[13px]">
+                <dt className="text-[var(--ink-dim)]">Subtotal</dt><dd>{money(open.subtotal)}</dd>
+                {totalSavings(open.items) > 0 && (<><dt className="font-semibold text-[var(--success-text)]">Customer saved</dt><dd className="font-semibold text-[var(--success-text)]">{money(totalSavings(open.items))}</dd></>)}
+                <dt className="text-[var(--ink-dim)]">Delivery</dt><dd>{money(open.deliveryFee)}</dd>
+                <dt className="font-bold">Total</dt><dd className="font-bold">{money(open.total)}</dd>
+              </dl>
+            </section>
+
+            <section>
+              <h3 className="mb-2 text-[11.5px] font-bold uppercase tracking-wide text-[var(--ink-faint)]">{open.customer.isGift ? "Gift delivery" : "Delivery"}</h3>
+              {(() => {
+                const p = place(open);
+                return (
+                  <div className="text-[13px] text-[var(--ink-dim)]">
+                    <div className="font-semibold text-[var(--ink)]">{p.name}</div>
+                    <div>{p.phone}</div>
+                    <div>{p.address}, {p.city}{p.district ? `, ${p.district}` : ""}</div>
+                    {p.flag && <div className="mt-1.5"><TownFlag /></div>}
+                    {!open.customer.isGift && <div className="mt-1">{open.customer.email}</div>}
+                  </div>
+                );
+              })()}
+            </section>
+          </div>
+        )}
+      </Drawer>
     </div>
   );
 }

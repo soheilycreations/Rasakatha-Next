@@ -1,112 +1,79 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import logoLight from "@/assets/rasakatha-logo-light-mode.png";
 import logoDark from "@/assets/rasakatha-logo-dark-mode.png";
+import { ROLE_LABELS, type Permission, type Role } from "@/lib/permissions";
+import { Badge, Kbd, ToastProvider, useToast } from "@/components/admin/ui";
+import NavIcon from "./NavIcon";
+import CommandPalette from "./CommandPalette";
+import SwitchUser from "./SwitchUser";
 
-const NAV_GROUPS = [
-  {
-    label: "Overview",
-    items: [{ href: "/admin", label: "Dashboard", icon: "grid" }],
-  },
+type NavItem = { href: string; label: string; icon: string; perm: Permission };
+const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
+  { label: "Overview", items: [{ href: "/admin", label: "Dashboard", icon: "grid", perm: "dashboard.view" }] },
   {
     label: "Sales",
     items: [
-      { href: "/admin/orders", label: "Web Orders", icon: "box" },
-      { href: "/admin/pos", label: "Point of Sale", icon: "till" },
-      { href: "/admin/pos/sales", label: "Shop Sales", icon: "receipt" },
-      { href: "/admin/customers", label: "Customers", icon: "user" },
-      { href: "/admin/reports", label: "Reports", icon: "chart" },
+      { href: "/admin/orders", label: "Web Orders", icon: "box", perm: "orders.view" },
+      { href: "/admin/pos", label: "Point of Sale", icon: "till", perm: "pos.use" },
+      { href: "/admin/pos/sales", label: "Shop Sales", icon: "receipt", perm: "pos.sales.view" },
+      { href: "/admin/customers", label: "Customers", icon: "user", perm: "customers.view" },
+      { href: "/admin/reports", label: "Reports", icon: "chart", perm: "reports.view" },
     ],
   },
   {
     label: "Catalog",
     items: [
-      { href: "/admin/books", label: "Books", icon: "book" },
-      { href: "/admin/authors", label: "Authors", icon: "user" },
-      { href: "/admin/categories", label: "Categories", icon: "tag" },
-      { href: "/admin/reviews", label: "Reviews", icon: "star" },
-      { href: "/admin/sliders", label: "Hero Sliders", icon: "image" },
+      { href: "/admin/books", label: "Books", icon: "book", perm: "books.view" },
+      { href: "/admin/authors", label: "Authors", icon: "user", perm: "authors.edit" },
+      { href: "/admin/categories", label: "Categories", icon: "tag", perm: "categories.edit" },
+      { href: "/admin/reviews", label: "Reviews", icon: "star", perm: "reviews.moderate" },
+      { href: "/admin/sliders", label: "Hero Sliders", icon: "image", perm: "sliders.edit" },
     ],
   },
-] as const;
+  {
+    label: "Administration",
+    items: [
+      { href: "/admin/staff", label: "Staff", icon: "shield", perm: "staff.manage" },
+      { href: "/admin/audit", label: "Audit log", icon: "log", perm: "audit.view" },
+      { href: "/admin/settings", label: "Settings", icon: "cog", perm: "settings.view" },
+    ],
+  },
+];
 
-function NavIcon({ name, className }: { name: string; className?: string }) {
-  const paths: Record<string, React.ReactNode> = {
-    star: <path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9L12 3z" />,
-    grid: (
-      <>
-        <rect x="3" y="3" width="7" height="7" rx="1.5" />
-        <rect x="14" y="3" width="7" height="7" rx="1.5" />
-        <rect x="3" y="14" width="7" height="7" rx="1.5" />
-        <rect x="14" y="14" width="7" height="7" rx="1.5" />
-      </>
-    ),
-    box: (
-      <>
-        <path d="M21 8l-9-5-9 5 9 5 9-5z" />
-        <path d="M3 8v8l9 5 9-5V8" />
-        <path d="M12 13v8" />
-      </>
-    ),
-    till: (
-      <>
-        <rect x="2.5" y="9" width="19" height="12" rx="2" />
-        <path d="M6 9V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v3" />
-        <path d="M2.5 14h19" />
-        <circle cx="12" cy="17" r="1.4" fill="currentColor" stroke="none" />
-      </>
-    ),
-    receipt: (
-      <>
-        <path d="M6 2h12v19l-2.5-1.5L13 21l-1-1.5L11 21l-2.5-1.5L6 21z" />
-        <path d="M9 7h6M9 11h6M9 15h4" />
-      </>
-    ),
-    chart: (
-      <>
-        <path d="M4 20V10M12 20V4M20 20v-7" />
-        <path d="M2 20h20" />
-      </>
-    ),
-    book: (
-      <>
-        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-      </>
-    ),
-    user: (
-      <>
-        <circle cx="12" cy="8" r="4" />
-        <path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8" />
-      </>
-    ),
-    tag: (
-      <>
-        <path d="M20.6 12.9 11.1 3.4a2 2 0 0 0-1.4-.6H4a1 1 0 0 0-1 1v5.7c0 .5.2 1 .6 1.4l9.5 9.5a2 2 0 0 0 2.8 0l4.7-4.7a2 2 0 0 0 0-2.8z" />
-        <circle cx="7.5" cy="7.5" r="1.25" fill="currentColor" stroke="none" />
-      </>
-    ),
-    image: (
-      <>
-        <rect x="3" y="3" width="18" height="18" rx="2" />
-        <circle cx="8.5" cy="8.5" r="1.5" />
-        <path d="M21 15l-5-5L5 21" />
-      </>
-    ),
-  };
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      {paths[name]}
-    </svg>
-  );
+export type AdminUser = { id: string; name: string; role: Role; emergency: boolean };
+
+function DeniedNotice() {
+  const { toast } = useToast();
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("denied")) {
+      toast("You don't have access to that page.", { tone: "error" });
+      history.replaceState(null, "", window.location.pathname);
+    }
+  }, [toast]);
+  return null;
 }
 
-export default function AdminShell({ children }: { children: React.ReactNode }) {
+function Shell({ user, permissions, children }: { user: AdminUser; permissions: Permission[]; children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [switching, setSwitching] = useState(false);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setPaletteOpen((o) => !o);
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
 
   const handleLogout = async () => {
     await fetch("/api/admin/logout", { method: "POST" });
@@ -114,64 +81,98 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
     router.refresh();
   };
 
+  const allowed = new Set<Permission>(permissions);
+
   return (
     <div className="flex h-screen overflow-hidden bg-[var(--bg)]">
       <aside className="flex w-60 shrink-0 flex-col overflow-y-auto border-r border-[var(--border)] bg-sidebar px-4 py-6">
-        <div className="mb-8 flex items-center gap-2.5 px-2">
+        <div className="mb-5 flex items-center gap-2.5 px-2">
           <Image src={logoLight} alt="Rasakatha.lk" className="logo-light h-8 w-auto" priority />
           <Image src={logoDark} alt="Rasakatha.lk" className="logo-dark h-9 w-auto" priority />
           <div className="text-[10.5px] font-semibold uppercase tracking-wide text-[var(--ink-faint)]">Admin Panel</div>
         </div>
 
-        <nav className="flex flex-1 flex-col gap-5">
-          {NAV_GROUPS.map((group) => (
-            <div key={group.label}>
-              <div className="mb-1.5 px-3 text-[10px] font-bold uppercase tracking-wider text-[var(--ink-faint)]">
-                {group.label}
+        <button
+          type="button"
+          onClick={() => setPaletteOpen(true)}
+          className="mb-5 flex min-h-11 items-center gap-2.5 rounded-xl border border-[var(--border)] bg-[var(--surface-tint)] px-3 text-left text-[13px] text-[var(--ink-dim)] transition-colors hover:border-[var(--border-strong)]"
+        >
+          <NavIcon name="search" className="h-4 w-4 shrink-0" />
+          <span className="flex-1">Search or jump to…</span>
+          <span className="flex gap-1">
+            <Kbd>Ctrl</Kbd>
+            <Kbd>K</Kbd>
+          </span>
+        </button>
+
+        <nav aria-label="Admin" className="flex flex-1 flex-col gap-5">
+          {NAV_GROUPS.map((group) => {
+            const items = group.items.filter((i) => allowed.has(i.perm));
+            if (items.length === 0) return null;
+            return (
+              <div key={group.label}>
+                <div className="mb-1.5 px-3 text-[10px] font-bold uppercase tracking-wider text-[var(--ink-faint)]">{group.label}</div>
+                <div className="flex flex-col gap-1">
+                  {items.map((item) => {
+                    const active = item.href === "/admin" || item.href === "/admin/pos" ? pathname === item.href : pathname.startsWith(item.href);
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        aria-current={active ? "page" : undefined}
+                        className={`flex min-h-11 items-center gap-3 rounded-xl px-3 text-[13.5px] font-semibold transition-colors ${
+                          active ? "bg-accent/[0.12] text-accent" : "text-[var(--ink-dim)] hover:bg-[var(--surface-tint)] hover:text-[var(--ink)]"
+                        }`}
+                      >
+                        <NavIcon name={item.icon} className="h-[18px] w-[18px] shrink-0" />
+                        {item.label}
+                      </Link>
+                    );
+                  })}
+                </div>
               </div>
-              <div className="flex flex-col gap-1">
-                {group.items.map((item) => {
-                  const active =
-                    item.href === "/admin" || item.href === "/admin/pos"
-                      ? pathname === item.href
-                      : pathname.startsWith(item.href);
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13.5px] font-semibold transition-colors ${
-                        active
-                          ? "bg-accent/[0.12] text-accent"
-                          : "text-[var(--ink-dim)] hover:bg-[var(--surface-tint)] hover:text-[var(--ink)]"
-                      }`}
-                    >
-                      <NavIcon name={item.icon} className="h-4.5 w-4.5 shrink-0" />
-                      {item.label}
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </nav>
 
-        <div className="flex flex-col gap-1 border-t border-[var(--border)] pt-4">
-          <Link
-            href="/"
-            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-semibold text-[var(--ink-dim)] transition-colors hover:bg-[var(--surface-tint)] hover:text-[var(--ink)]"
-          >
+        <div className="mt-4 flex flex-col gap-1 border-t border-[var(--border)] pt-4">
+          <div className="mb-1 px-3">
+            <div className="truncate text-[13px] font-bold text-[var(--ink)]">{user.name}</div>
+            <div className="mt-1 flex items-center gap-1.5">
+              <Badge tone={user.role === "owner" ? "accent" : "neutral"}>{ROLE_LABELS[user.role]}</Badge>
+              {user.emergency && <Badge tone="warning">Emergency login</Badge>}
+            </div>
+          </div>
+          <Link href="/admin/account" className="flex min-h-11 items-center rounded-xl px-3 text-[13px] font-semibold text-[var(--ink-dim)] transition-colors hover:bg-[var(--surface-tint)] hover:text-[var(--ink)]">
+            My account &amp; security
+          </Link>
+          {!user.emergency && (
+            <button onClick={() => setSwitching(true)} className="flex min-h-11 items-center rounded-xl px-3 text-left text-[13px] font-semibold text-[var(--ink-dim)] transition-colors hover:bg-[var(--surface-tint)] hover:text-[var(--ink)]">
+              Switch user (PIN)
+            </button>
+          )}
+          <Link href="/" className="flex min-h-11 items-center rounded-xl px-3 text-[13px] font-semibold text-[var(--ink-dim)] transition-colors hover:bg-[var(--surface-tint)] hover:text-[var(--ink)]">
             ← Back to Store
           </Link>
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[13px] font-semibold text-[var(--ink-faint)] transition-colors hover:bg-accent/[0.08] hover:text-accent"
-          >
+          <button onClick={handleLogout} className="flex min-h-11 items-center rounded-xl px-3 text-left text-[13px] font-semibold text-[var(--ink-faint)] transition-colors hover:bg-accent/[0.08] hover:text-accent">
             Sign Out
           </button>
         </div>
       </aside>
 
       <main className="min-w-0 flex-1 overflow-y-auto px-8 py-7">{children}</main>
+
+      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} permissions={permissions} />
+      <SwitchUser open={switching} onClose={() => setSwitching(false)} />
+      <DeniedNotice />
     </div>
+  );
+}
+
+export default function AdminShell(props: { user: AdminUser; permissions: Permission[]; children: React.ReactNode }) {
+  return (
+    <ToastProvider>
+      <Shell {...props} />
+    </ToastProvider>
   );
 }

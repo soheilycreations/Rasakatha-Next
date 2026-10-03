@@ -4,6 +4,13 @@ import { defineConfig } from "@playwright/test";
 // (uses the Supabase from .env.local, read-only; no test creates an order).
 // Browser: the Microsoft Edge/Chrome already on the machine, so no browser download is needed.
 // In CI set PLAYWRIGHT_CHANNEL=chromium after `npx playwright install chromium`.
+// the admin tests sign sessions with the same ADMIN_SESSION_SECRET the server uses
+try {
+  process.loadEnvFile(".env.local");
+} catch {
+  // CI sets the variables itself
+}
+
 const PORT = 3100;
 
 export default defineConfig({

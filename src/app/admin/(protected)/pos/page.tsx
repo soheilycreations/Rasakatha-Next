@@ -5,8 +5,7 @@ import type { CatalogBook } from "@/lib/catalog";
 import type { PosPaymentMethod, PosSale, PosSaleItem } from "@/lib/pos";
 import { POS_PAYMENT_LABELS } from "@/lib/pos";
 import { money } from "@/lib/format";
-import Toast from "../Toast";
-import ConfirmModal from "../ConfirmModal";
+import { ConfirmDialog, useToast } from "@/components/admin/ui";
 
 function useDebounced<T>(value: T, delay = 300): T {
   const [debounced, setDebounced] = useState(value);
@@ -190,7 +189,8 @@ export default function AdminPosPage() {
   const [error, setError] = useState("");
   const [receipt, setReceipt] = useState<PosSale | null>(null);
   const [reprintSale, setReprintSale] = useState<PosSale | null>(null);
-  const [toast, setToast] = useState("");
+  const { toast: pushToast } = useToast();
+  const setToast = (message: string) => pushToast(message);
   const [heldBills, setHeldBills] = useState<HeldBill[]>([]);
   const [heldLoaded, setHeldLoaded] = useState(false);
   const [showHeld, setShowHeld] = useState(false);
@@ -237,12 +237,6 @@ export default function AdminPosPage() {
         setSearching(false);
       });
   }, [debouncedQuery]);
-
-  useEffect(() => {
-    if (!toast) return;
-    const id = setTimeout(() => setToast(""), 2500);
-    return () => clearTimeout(id);
-  }, [toast]);
 
   useEffect(() => {
     if (pendingBook) {
@@ -717,12 +711,12 @@ export default function AdminPosPage() {
           </p>
         </div>
       </div>
-
-      {toast && <Toast message={toast} />}
     </div>
 
     {voidConfirm && (
-      <ConfirmModal
+      <ConfirmDialog
+          open
+          danger
         title="Void this bill?"
         description="All items and customer details on the current bill will be cleared. This can't be undone."
         confirmLabel="Void Bill"

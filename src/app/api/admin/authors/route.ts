@@ -1,4 +1,7 @@
 import { NextResponse } from "next/server";
+import { audit } from "@/lib/server/audit";
+import { parseBody } from "@/lib/server/validate";
+import { authorPutSchema } from "@/lib/schemas/admin";
 import { supabase } from "@/lib/server/supabase";
 import { getCatalog, type CatalogBook } from "@/lib/catalog";
 
@@ -30,12 +33,14 @@ export async function GET() {
 }
 
 export async function PUT(request: Request) {
-  const { name, bio, photo } = (await request.json()) as { name: string; bio?: string; photo?: string };
-  if (!name) return NextResponse.json({ error: "Missing author name" }, { status: 400 });
+  const parsedBody = await parseBody(request, authorPutSchema);
+  if (!parsedBody.ok) return parsedBody.response;
+  const { name, bio, photo } = parsedBody.data;
 
   const { data: current } = await supabase().from("author_meta").select("*").eq("name", name).maybeSingle();
   const next = { name, bio: bio ?? current?.bio ?? "", photo: photo ?? current?.photo ?? "" };
   const { error } = await supabase().from("author_meta").upsert(next);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  await audit({ action: "authors.update", entity: "author", entityId: name, before: current, after: next });
   return NextResponse.json({ ok: true, ...next });
 }

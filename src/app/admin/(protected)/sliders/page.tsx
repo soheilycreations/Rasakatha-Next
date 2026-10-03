@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { HeroSlide } from "@/lib/hero-slides";
-import ConfirmModal from "../ConfirmModal";
-import Toast from "../Toast";
+import { ConfirmDialog, useToast } from "@/components/admin/ui";
 
 const emptyForm: Partial<HeroSlide> = { id: "", title: "", cover: "", author: "", price: undefined };
 
@@ -93,7 +92,8 @@ export default function AdminSlidersPage() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<SlideDraft | null>(null);
   const [deleting, setDeleting] = useState<HeroSlide | null>(null);
-  const [toast, setToast] = useState("");
+  const { toast: pushToast } = useToast();
+  const setToast = (message: string) => pushToast(message);
 
   const load = () => {
     fetch("/api/admin/hero-slides")
@@ -105,12 +105,6 @@ export default function AdminSlidersPage() {
   };
 
   useEffect(load, []);
-
-  useEffect(() => {
-    if (!toast) return;
-    const id = setTimeout(() => setToast(""), 2500);
-    return () => clearTimeout(id);
-  }, [toast]);
 
   const handleDelete = async () => {
     if (!deleting) return;
@@ -190,7 +184,9 @@ export default function AdminSlidersPage() {
       )}
 
       {deleting && (
-        <ConfirmModal
+        <ConfirmDialog
+          open
+          danger
           title="Remove this hero slide?"
           description={`"${deleting.title}" will disappear from the homepage carousel.`}
           confirmLabel="Remove"
@@ -198,8 +194,6 @@ export default function AdminSlidersPage() {
           onConfirm={handleDelete}
         />
       )}
-
-      {toast && <Toast message={toast} />}
     </div>
   );
 }

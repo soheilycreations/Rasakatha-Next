@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import ConfirmModal from "../ConfirmModal";
-import Toast from "../Toast";
+import { ConfirmDialog, useToast } from "@/components/admin/ui";
 
 type Review = {
   id: string;
@@ -22,7 +21,8 @@ export default function AdminReviewsPage() {
   const [filter, setFilter] = useState<"all" | "visible" | "hidden">("all");
   const [search, setSearch] = useState("");
   const [toDelete, setToDelete] = useState<Review | null>(null);
-  const [toast, setToast] = useState("");
+  const { toast: pushToast } = useToast();
+  const setToast = (message: string) => pushToast(message);
 
   const load = () =>
     fetch("/api/admin/reviews")
@@ -36,12 +36,6 @@ export default function AdminReviewsPage() {
   useEffect(() => {
     load();
   }, []);
-
-  useEffect(() => {
-    if (!toast) return;
-    const id = setTimeout(() => setToast(""), 2500);
-    return () => clearTimeout(id);
-  }, [toast]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -147,14 +141,16 @@ export default function AdminReviewsPage() {
       )}
 
       {toDelete && (
-        <ConfirmModal
+        <ConfirmDialog
+          open
+          danger
           title="Delete this review?"
+          confirmLabel="Delete"
           description={`${toDelete.name}'s review of ${toDelete.bookTitle} will be removed permanently.`}
           onCancel={() => setToDelete(null)}
           onConfirm={() => remove(toDelete)}
         />
       )}
-      {toast && <Toast message={toast} />}
     </div>
   );
 }

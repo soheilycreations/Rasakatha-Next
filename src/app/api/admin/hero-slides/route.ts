@@ -1,4 +1,7 @@
 import { NextResponse } from "next/server";
+import { audit } from "@/lib/server/audit";
+import { parseBody } from "@/lib/server/validate";
+import { heroSlideSchema } from "@/lib/schemas/admin";
 import { revalidatePath } from "next/cache";
 import { supabase } from "@/lib/server/supabase";
 import { getHeroSlides, rowToSlide } from "@/lib/server/heroSlides";
@@ -9,7 +12,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const body = (await request.json()) as Partial<HeroSlide>;
+  const parsedBody = await parseBody(request, heroSlideSchema);
+  if (!parsedBody.ok) return parsedBody.response;
+  const body = parsedBody.data as Partial<HeroSlide>;
 
   const { data: last } = await supabase()
     .from("hero_slides")
@@ -32,11 +37,15 @@ export async function POST(request: Request) {
     .single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   revalidatePath("/");
+  await audit({ action: "hero.create", entity: "hero_slide", entityId: data.id, after: data });
   return NextResponse.json(rowToSlide(data));
 }
 
 export async function PUT(request: Request) {
-  const body = (await request.json()) as HeroSlide;
+  const parsedBody = await parseBody(request, heroSlideSchema);
+  if (!parsedBody.ok) return parsedBody.response;
+  const body = parsedBody.data as HeroSlide;
+  const { data: before } = await supabase().from("hero_slides").select("*").eq("id", body.id).maybeSingle();
   const { data, error } = await supabase()
     .from("hero_slides")
     .update({
@@ -51,6 +60,7 @@ export async function PUT(request: Request) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!data) return NextResponse.json({ error: "Slide not found" }, { status: 404 });
   revalidatePath("/");
+  await audit({ action: "hero.update", entity: "hero_slide", entityId: body.id, before, after: data });
   return NextResponse.json(rowToSlide(data));
 }
 
@@ -58,8 +68,10 @@ export async function DELETE(request: Request) {
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
+  const { data: before } = await supabase().from("hero_slides").select("*").eq("id", id).maybeSingle();
   const { error } = await supabase().from("hero_slides").delete().eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   revalidatePath("/");
+  await audit({ action: "hero.delete", entity: "hero_slide", entityId: id, before }); // layout config, not business data
   return NextResponse.json({ ok: true });
 }

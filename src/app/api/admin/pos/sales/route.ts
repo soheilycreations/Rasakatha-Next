@@ -1,4 +1,7 @@
 import { NextResponse } from "next/server";
+import { audit } from "@/lib/server/audit";
+import { parseBody } from "@/lib/server/validate";
+import { posSaleSchema } from "@/lib/schemas/admin";
 import { supabase } from "@/lib/server/supabase";
 import { rowToPosSale, type PosSaleRow } from "@/lib/server/posDb";
 import type { PosSaleItem, PosPaymentMethod } from "@/lib/pos";
@@ -20,10 +23,12 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const body = await request.json();
-  const items = body.items as PosSaleItem[];
+  const parsedBody = await parseBody(request, posSaleSchema);
+  if (!parsedBody.ok) return parsedBody.response;
+  const body = parsedBody.data;
+  const items = body.items as unknown as PosSaleItem[];
   const discount = Number(body.discount) || 0;
-  const payment = VALID_PAYMENTS.includes(body.payment) ? (body.payment as PosPaymentMethod) : "cash";
+  const payment = VALID_PAYMENTS.includes(body.payment as PosPaymentMethod) ? (body.payment as PosPaymentMethod) : "cash";
   const customerName = body.customerName?.trim() || null;
   const customerPhone = body.customerPhone?.trim() || null;
   const customerEmail = body.customerEmail?.trim().toLowerCase() || null;
@@ -54,7 +59,10 @@ export async function POST(request: Request) {
       .select()
       .single();
 
-    if (!error) return NextResponse.json(rowToPosSale(data as PosSaleRow));
+    if (!error) {
+      await audit({ action: "pos.sale", entity: "pos_sale", entityId: id, after: { total, payment, discount, items: items.length, customer: customerName } });
+      return NextResponse.json(rowToPosSale(data as PosSaleRow));
+    }
     if (error.code !== "23505") return NextResponse.json({ error: error.message }, { status: 500 });
   }
   return NextResponse.json({ error: "Could not complete the sale, try again" }, { status: 500 });

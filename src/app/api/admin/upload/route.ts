@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import sharp from "sharp";
 import { supabase } from "@/lib/server/supabase";
+import { audit } from "@/lib/server/audit";
 
 const BUCKET = "covers";
 const MAX_BYTES = 10 * 1024 * 1024;
@@ -39,5 +40,6 @@ export async function POST(request: Request) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   const { data } = supabase().storage.from(BUCKET).getPublicUrl(filename);
+  await audit({ action: "uploads.create", entity: "upload", entityId: filename, after: { url: data.publicUrl } });
   return NextResponse.json({ url: data.publicUrl });
 }

@@ -58,10 +58,11 @@ type BookRow = {
   translator?: string | null;
   published_at?: string | null;
   is_own_title?: boolean | null;
+  archived_at?: string | null; // soft delete (supabase/admin-phase-0.sql)
 };
 
 // Columns added by later migrations. If a migration hasn't been run yet, writes retry without them.
-export const OPTIONAL_COLUMNS = ["stock_qty", "isbn", "pages", "language", "published_year", "binding", "translator", "published_at", "is_own_title"] as const;
+export const OPTIONAL_COLUMNS = ["stock_qty", "isbn", "pages", "language", "published_year", "binding", "translator", "published_at", "is_own_title", "archived_at"] as const;
 export function withoutOptionalColumns<T extends Record<string, unknown>>(row: T): Omit<T, (typeof OPTIONAL_COLUMNS)[number]> {
   const copy: Record<string, unknown> = { ...row };
   for (const c of OPTIONAL_COLUMNS) delete copy[c];
@@ -155,7 +156,8 @@ async function fetchAll(): Promise<CatalogBook[]> {
       .order("id")
       .range(from, from + PAGE - 1);
     if (error) throw new Error(`Failed to load catalog: ${error.message}`);
-    all.push(...(data as BookRow[]).map(rowToBook));
+    // archived books (soft-deleted by staff) are never shown in the store
+    all.push(...(data as BookRow[]).filter((r) => !r.archived_at).map(rowToBook));
     if (!data || data.length < PAGE) break;
   }
   return all;

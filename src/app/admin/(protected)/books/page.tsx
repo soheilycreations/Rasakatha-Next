@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { CatalogBook } from "@/lib/catalog";
 import { money } from "@/lib/format";
-import ConfirmModal from "../ConfirmModal";
-import Toast from "../Toast";
-import Combobox from "../Combobox";
+import { bookHref } from "@/lib/links";
+import { Badge, Button, Combobox, ConfirmDialog, DataTable, Dialog, Drawer, Input, Select, Textarea, useToast, type Column } from "@/components/admin/ui";
 
 const emptyForm: Partial<CatalogBook> = {
   title: "",
@@ -30,6 +29,18 @@ const emptyForm: Partial<CatalogBook> = {
   isOwnTitle: false,
 };
 
+type Filter = "" | "missing_description" | "missing_publisher" | "archived";
+const intOrNull = (v: string) => (v === "" ? null : Number(v));
+
+function Cover({ src, className = "h-12 w-9" }: { src: string | null; className?: string }) {
+  return src ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={src} alt="" loading="lazy" decoding="async" className={`${className} shrink-0 rounded-md border border-[var(--border)] bg-[var(--surface-tint)] object-cover`} />
+  ) : (
+    <div className={`${className} grid shrink-0 place-items-center rounded-md bg-[var(--surface-tint-strong)] text-[9px] text-[var(--ink-faint)]`}>No cover</div>
+  );
+}
+
 function BookForm({
   initial,
   categories,
@@ -50,12 +61,7 @@ function BookForm({
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const isEdit = !!initial.id;
-
-  const set = <K extends keyof CatalogBook>(key: K, value: CatalogBook[K]) =>
-    setForm((f) => ({ ...f, [key]: value }));
-
-  const inputClass =
-    "w-full rounded-lg border border-[var(--border)] bg-[var(--surface-tint)] px-3 py-2 text-[13px] text-[var(--ink)] placeholder:text-[var(--ink-faint)] focus:outline-none focus:border-accent/50";
+  const set = <K extends keyof CatalogBook>(key: K, value: CatalogBook[K]) => setForm((f) => ({ ...f, [key]: value }));
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -69,406 +75,342 @@ function BookForm({
       body.append("idHint", form.id || form.title || "");
       const res = await fetch("/api/admin/upload", { method: "POST", body });
       const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || "Could not upload that image.");
-        return;
-      }
+      if (!res.ok) return setError(data.error || "Could not upload that image.");
       set("cover", data.url);
     } catch {
-      setError("Network error while uploading — try again.");
+      setError("Network error while uploading. Try again.");
     } finally {
       setUploading(false);
     }
   };
 
   const handleSave = async () => {
-    if (!form.title?.trim()) {
-      setError("Title is required");
-      return;
-    }
+    if (!form.title?.trim()) return setError("Title is required");
     setSaving(true);
     setError("");
     try {
-      const res = await fetch("/api/admin/books", {
-        method: isEdit ? "PUT" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setError(data.error || "Could not save this book. Try again.");
-        return;
-      }
+      const res = await fetch("/api/admin/books", { method: isEdit ? "PUT" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
+      if (!res.ok) return setError((await res.json().catch(() => ({}))).error || "Could not save this book. Try again.");
       onSaved();
     } catch {
-      setError("Network error — check your connection and try again.");
+      setError("Network error. Check your connection and try again.");
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4" onClick={onCancel}>
-      <div
-        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-[var(--border)] bg-card p-6"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h3 className="mb-4 text-[16px] font-bold text-[var(--ink)]">{isEdit ? "Edit Book" : "Add Book"}</h3>
-        <div className="grid gap-3">
-          <input className={inputClass} placeholder="Title" value={form.title || ""} onChange={(e) => set("title", e.target.value)} />
-          <Combobox
-            className={inputClass}
-            placeholder="Author"
-            value={form.author || ""}
-            options={authors}
-            onChange={(v) => set("author", v)}
-          />
-          <div className="grid grid-cols-2 gap-3">
-            <Combobox
-              className={inputClass}
-              placeholder="Publisher"
-              value={form.publisher || ""}
-              options={publishers}
-              onChange={(v) => set("publisher", v)}
-            />
-            <Combobox
-              className={inputClass}
-              placeholder="Category"
-              value={form.category || ""}
-              options={categories}
-              onChange={(v) => set("category", v)}
-            />
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            <input
-              className={inputClass}
-              type="number"
-              placeholder="Regular Price"
-              value={form.regularPrice ?? 0}
-              onChange={(e) => set("regularPrice", Number(e.target.value))}
-            />
-            <input
-              className={inputClass}
-              type="number"
-              placeholder="Sale Price"
-              value={form.salePrice ?? ""}
-              onChange={(e) => set("salePrice", e.target.value ? Number(e.target.value) : null)}
-            />
-            <input
-              className={inputClass}
-              type="number"
-              placeholder="Weight (g)"
-              value={form.weight ?? 303}
-              onChange={(e) => set("weight", Number(e.target.value))}
-            />
-            <input
-              className={inputClass}
-              type="number"
-              min={0}
-              placeholder="Stock qty (blank = not tracked)"
-              aria-label="Stock quantity"
-              value={form.stockQty ?? ""}
-              onChange={(e) => set("stockQty", e.target.value === "" ? null : Number(e.target.value))}
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <input className={inputClass} placeholder="ISBN" aria-label="ISBN" value={form.isbn ?? ""} onChange={(e) => set("isbn", e.target.value)} />
-            <input className={inputClass} placeholder="Translator" aria-label="Translator" value={form.translator ?? ""} onChange={(e) => set("translator", e.target.value)} />
-            <input
-              className={inputClass}
-              type="number"
-              min={1}
-              placeholder="Pages"
-              aria-label="Pages"
-              value={form.pages ?? ""}
-              onChange={(e) => set("pages", e.target.value === "" ? null : Number(e.target.value))}
-            />
-            <input
-              className={inputClass}
-              type="number"
-              min={1400}
-              max={2200}
-              placeholder="Published year"
-              aria-label="Published year"
-              value={form.publishedYear ?? ""}
-              onChange={(e) => set("publishedYear", e.target.value === "" ? null : Number(e.target.value))}
-            />
-            <select
-              className={inputClass}
-              aria-label="Language"
-              value={form.language ?? ""}
-              onChange={(e) => set("language", (e.target.value || null) as CatalogBook["language"])}
-            >
-              <option value="">Language (not set)</option>
-              <option value="si">Sinhala</option>
-              <option value="en">English</option>
-              <option value="ta">Tamil</option>
-            </select>
-            <select
-              className={inputClass}
-              aria-label="Binding"
-              value={form.binding ?? ""}
-              onChange={(e) => set("binding", e.target.value || null)}
-            >
-              <option value="">Binding (not set)</option>
-              <option value="Paperback">Paperback</option>
-              <option value="Hardcover">Hardcover</option>
-            </select>
-          </div>
-          <div>
-            <div className="mb-1.5 text-[11.5px] font-semibold text-[var(--ink-dim)]">Cover Image</div>
-            <div className="flex items-center gap-3">
-              {form.cover ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={form.cover} alt="" className="h-20 w-14 shrink-0 rounded-md border border-[var(--border)] object-cover" />
-              ) : (
-                <div className="grid h-20 w-14 shrink-0 place-items-center rounded-md border border-dashed border-[var(--border-strong)] text-[9px] text-[var(--ink-faint)]">
-                  No cover
-                </div>
-              )}
-              <div className="flex flex-1 flex-col gap-2">
-                <label className="w-fit cursor-pointer rounded-lg border border-[var(--border)] bg-[var(--surface-tint)] px-3 py-2 text-[12.5px] font-semibold text-[var(--ink)] hover:bg-[var(--surface-tint-strong)]">
-                  {uploading ? "Uploading…" : form.cover ? "Replace Image" : "Upload Image"}
-                  <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" disabled={uploading} onChange={handleFileSelect} />
-                </label>
-                <input
-                  className={`${inputClass} text-[12px]`}
-                  placeholder="…or paste an image URL"
-                  value={form.cover || ""}
-                  onChange={(e) => set("cover", e.target.value)}
-                />
-              </div>
-            </div>
-          </div>
-          <textarea
-            className={`${inputClass} resize-none`}
-            placeholder="Blurb"
-            rows={3}
-            value={form.blurb || ""}
-            onChange={(e) => set("blurb", e.target.value)}
-          />
-          <div className="flex items-center gap-5">
-            <label className="flex items-center gap-2 text-[13px] text-[var(--ink-dim)]">
-              <input type="checkbox" checked={!!form.onSale} onChange={(e) => set("onSale", e.target.checked)} className="accent-accent" />
-              On Sale
-            </label>
-            <label className="flex items-center gap-2 text-[13px] text-[var(--ink-dim)]">
-              <input type="checkbox" checked={form.inStock !== false} onChange={(e) => set("inStock", e.target.checked)} className="accent-accent" />
-              In Stock
-            </label>
-            <label className="flex items-center gap-2 text-[13px] text-[var(--ink-dim)]">
-              <input type="checkbox" checked={!!form.isOwnTitle} onChange={(e) => set("isOwnTitle", e.target.checked)} className="accent-accent" />
-              Our title (Rasakatha)
-            </label>
-          </div>
-        </div>
-        {error && <p className="mt-3 text-[12.5px] font-semibold text-accent">{error}</p>}
-        <div className="mt-5 flex justify-end gap-2">
-          <button onClick={onCancel} className="rounded-full px-4 py-2 text-[13px] font-semibold text-[var(--ink-dim)] hover:bg-[var(--surface-tint)]">
+    <Dialog
+      open
+      onClose={onCancel}
+      title={isEdit ? "Edit book" : "Add book"}
+      size="lg"
+      footer={
+        <>
+          <Button variant="ghost" onClick={onCancel}>
             Cancel
-          </button>
-          <button onClick={handleSave} disabled={saving || uploading} className="btn-accent rounded-full px-5 py-2 text-[13px] font-bold text-white disabled:opacity-60">
-            {saving ? "Saving…" : "Save Book"}
-          </button>
+          </Button>
+          <Button variant="primary" onClick={handleSave} loading={saving} disabled={uploading}>
+            {isEdit ? "Save changes" : "Add book"}
+          </Button>
+        </>
+      }
+    >
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="sm:col-span-2">
+          <Input label="Title" data-autofocus value={form.title || ""} onChange={(e) => set("title", e.target.value)} />
         </div>
+        <Combobox label="Author" value={form.author || ""} options={authors} onChange={(v) => set("author", v)} />
+        <Combobox label="Publisher" value={form.publisher || ""} options={publishers} onChange={(v) => set("publisher", v)} />
+        <Combobox label="Category" value={form.category || ""} options={categories} onChange={(v) => set("category", v)} />
+        <Input label="Translator" value={form.translator ?? ""} onChange={(e) => set("translator", e.target.value || null)} />
+        <Input label="Price (Rs.)" type="number" min={0} value={form.regularPrice ?? 0} onChange={(e) => set("regularPrice", Number(e.target.value))} />
+        <Input label="Sale price (Rs.)" type="number" min={0} value={form.salePrice ?? ""} onChange={(e) => set("salePrice", e.target.value ? Number(e.target.value) : null)} hint="Leave empty if not on sale." />
+        <Input label="Weight (g)" type="number" min={0} value={form.weight ?? 303} onChange={(e) => set("weight", Number(e.target.value))} />
+        <Input label="Stock quantity" type="number" min={0} value={form.stockQty ?? ""} onChange={(e) => set("stockQty", intOrNull(e.target.value))} hint="Leave empty if you don't track stock for this book." />
+        <Input label="ISBN" value={form.isbn ?? ""} onChange={(e) => set("isbn", e.target.value || null)} />
+        <Input label="Pages" type="number" min={1} value={form.pages ?? ""} onChange={(e) => set("pages", intOrNull(e.target.value))} />
+        <Input label="Published year" type="number" min={1400} max={2200} value={form.publishedYear ?? ""} onChange={(e) => set("publishedYear", intOrNull(e.target.value))} />
+        <Select label="Language" value={form.language ?? ""} onChange={(e) => set("language", (e.target.value || null) as CatalogBook["language"])}>
+          <option value="">Not set</option>
+          <option value="si">Sinhala</option>
+          <option value="en">English</option>
+          <option value="ta">Tamil</option>
+        </Select>
+        <Select label="Binding" value={form.binding ?? ""} onChange={(e) => set("binding", e.target.value || null)}>
+          <option value="">Not set</option>
+          <option value="Paperback">Paperback</option>
+          <option value="Hardcover">Hardcover</option>
+        </Select>
+        <div className="sm:col-span-2">
+          <Textarea label="Description" rows={6} value={form.blurb || ""} onChange={(e) => set("blurb", e.target.value)} hint="No length limit. The book page shows about 4 lines with a Read more button." />
+        </div>
+
+        <div className="flex items-start gap-3 sm:col-span-2">
+          <Cover src={form.cover || null} className="h-24 w-16" />
+          <div className="flex flex-1 flex-col gap-2">
+            <span className="text-[12.5px] font-semibold text-[var(--ink-dim)]">Cover image</span>
+            <label className="inline-flex min-h-11 w-fit cursor-pointer items-center rounded-full border border-[var(--border-strong)] bg-[var(--surface-tint)] px-5 text-[13px] font-bold text-[var(--ink)] hover:border-accent">
+              {uploading ? "Uploading…" : form.cover ? "Replace image" : "Upload image"}
+              <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" disabled={uploading} onChange={handleFileSelect} />
+            </label>
+            <Input label="…or paste an image URL" value={form.cover || ""} onChange={(e) => set("cover", e.target.value)} />
+          </div>
+        </div>
+
+        <fieldset className="flex flex-wrap gap-x-6 gap-y-2 sm:col-span-2">
+          <legend className="sr-only">Flags</legend>
+          {(
+            [
+              ["onSale", "On sale"],
+              ["inStock", "In stock"],
+              ["isOwnTitle", "Our title (Rasakatha)"],
+            ] as const
+          ).map(([key, label]) => (
+            <label key={key} className="flex min-h-11 items-center gap-2.5 text-[13.5px] text-[var(--ink)]">
+              <input type="checkbox" checked={key === "inStock" ? form.inStock !== false : !!form[key]} onChange={(e) => set(key, e.target.checked as never)} className="h-5 w-5 accent-accent" />
+              {label}
+            </label>
+          ))}
+        </fieldset>
       </div>
-    </div>
+      {error && (
+        <p role="alert" className="mt-3 text-[12.5px] font-semibold text-accent">
+          {error}
+        </p>
+      )}
+    </Dialog>
   );
 }
 
 export default function AdminBooksPage() {
+  const { toast } = useToast();
   const [items, setItems] = useState<CatalogBook[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [pageCount, setPageCount] = useState(1);
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<"" | "missing_description" | "missing_publisher">("");
+  const [debounced, setDebounced] = useState("");
+  const [filter, setFilter] = useState<Filter>("");
   const [counts, setCounts] = useState({ missingDescription: 0, missingPublisher: 0 });
   const [loading, setLoading] = useState(true);
+  const [viewing, setViewing] = useState<CatalogBook | null>(null);
   const [editing, setEditing] = useState<Partial<CatalogBook> | null>(null);
-  const [deleting, setDeleting] = useState<CatalogBook | null>(null);
-  const [toast, setToast] = useState("");
+  const [archiving, setArchiving] = useState<CatalogBook | null>(null);
+  const [reason, setReason] = useState("");
   const [categories, setCategories] = useState<string[]>([]);
   const [authors, setAuthors] = useState<string[]>([]);
   const [publishers, setPublishers] = useState<string[]>([]);
 
+  // deep links from the command palette: ?q=<book id/title>, ?new=1
   useEffect(() => {
-    fetch("/api/admin/categories")
-      .then((r) => r.json())
-      .then((data: { name: string }[]) => setCategories(data.map((c) => c.name)));
-    fetch("/api/admin/authors")
-      .then((r) => r.json())
-      .then((data: { name: string }[]) => setAuthors(data.map((a) => a.name)));
-    fetch("/api/admin/publishers")
-      .then((r) => r.json())
-      .then((data: string[]) => setPublishers(data));
+    const sp = new URLSearchParams(window.location.search);
+    queueMicrotask(() => {
+      const q = sp.get("q");
+      if (q) {
+        setSearch(q);
+        setDebounced(q);
+      }
+      if (sp.get("new")) setEditing(emptyForm);
+    });
   }, []);
 
-  const load = () => {
-    const params = new URLSearchParams({ page: String(page), limit: "20", search, ...(filter ? { filter } : {}) });
+  useEffect(() => {
+    fetch("/api/admin/categories").then((r) => r.json()).then((d: { name: string }[]) => setCategories(d.map((c) => c.name)));
+    fetch("/api/admin/authors").then((r) => r.json()).then((d: { name: string }[]) => setAuthors(d.map((a) => a.name)));
+    fetch("/api/admin/publishers").then((r) => r.json()).then((d: string[]) => setPublishers(d));
+  }, []);
+
+  // search is debounced so typing doesn't fire a request per key
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setDebounced(search);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  const load = useCallback(() => {
+    const params = new URLSearchParams({ page: String(page), limit: "20", search: debounced, ...(filter ? { filter } : {}) });
+    queueMicrotask(() => setLoading(true));
     fetch(`/api/admin/books?${params}`)
       .then((r) => r.json())
       .then((data) => {
-        setItems(data.items);
-        setTotal(data.total);
-        setPageCount(data.pageCount);
+        setItems(data.items ?? []);
+        setTotal(data.total ?? 0);
+        setPageCount(data.pageCount ?? 1);
         if (data.counts) setCounts(data.counts);
         setLoading(false);
       });
-  };
+  }, [page, debounced, filter]);
 
   useEffect(() => {
-    queueMicrotask(() => setLoading(true));
     load();
-  }, [page, search, filter]);
+  }, [load]);
 
-  useEffect(() => {
-    if (!toast) return;
-    const id = setTimeout(() => setToast(""), 2500);
-    return () => clearTimeout(id);
-  }, [toast]);
-
-  const handleDelete = async () => {
-    if (!deleting) return;
-    const res = await fetch(`/api/admin/books?id=${deleting.id}`, { method: "DELETE" });
-    setDeleting(null);
-    if (res.ok) {
-      setToast(`Deleted "${deleting.title}"`);
-      load();
-    } else {
-      setToast("Could not delete that book. Try again.");
-    }
+  const archive = async () => {
+    if (!archiving) return;
+    const book = archiving;
+    const res = await fetch(`/api/admin/books?id=${encodeURIComponent(book.id)}&reason=${encodeURIComponent(reason.trim())}`, { method: "DELETE" });
+    setArchiving(null);
+    setReason("");
+    setViewing(null);
+    if (!res.ok) return toast((await res.json().catch(() => ({}))).error || "Could not archive that book.", { tone: "error" });
+    load();
+    toast(`Archived “${book.title.split("|")[0].trim()}”`, {
+      undo: async () => {
+        await fetch("/api/admin/books", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: book.id }) });
+        load();
+        toast("Restored");
+      },
+    });
   };
+
+  const restore = async (b: CatalogBook) => {
+    await fetch("/api/admin/books", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: b.id }) });
+    setViewing(null);
+    load();
+    toast("Restored");
+  };
+
+  const columns: Column<CatalogBook>[] = [
+    { key: "cover", header: "", width: "52px", cell: (b) => <Cover src={b.cover} /> },
+    {
+      key: "title",
+      header: "Title",
+      width: "minmax(0,2fr)",
+      sortValue: (b) => b.title.toLowerCase(),
+      cell: (b) => (
+        <div className="min-w-0">
+          <div className="truncate font-semibold">{b.title}</div>
+          <div className="truncate text-[12px] text-[var(--ink-dim)]">
+            {b.publisher || <span className="text-accent">No publisher</span>}
+            {!b.blurb?.trim() && <span className="ml-2 text-amber-600">· no description</span>}
+          </div>
+        </div>
+      ),
+    },
+    { key: "author", header: "Author", sortValue: (b) => b.author.toLowerCase(), hideBelow: "md", cell: (b) => <span className="block truncate text-[var(--ink-dim)]">{b.author}</span> },
+    { key: "category", header: "Category", width: "130px", sortValue: (b) => b.category, hideBelow: "lg", cell: (b) => <span className="block truncate text-[var(--ink-dim)]">{b.category}</span> },
+    { key: "price", header: "Price", width: "100px", align: "right", sortValue: (b) => (b.onSale && b.salePrice ? b.salePrice : b.regularPrice), cell: (b) => money(b.onSale && b.salePrice ? b.salePrice : b.regularPrice) },
+    {
+      key: "stock",
+      header: "Stock",
+      width: "130px",
+      sortValue: (b) => (b.stockQty ?? (b.inStock ? 1 : 0)),
+      cell: (b) => (
+        <span className="flex items-center gap-1.5">
+          <Badge tone={b.inStock ? "success" : "accent"}>{b.inStock ? "In stock" : "Sold out"}</Badge>
+          {b.stockQty != null && <span className="text-[12px] text-[var(--ink-dim)]">{b.stockQty}</span>}
+        </span>
+      ),
+    },
+    { key: "own", header: "Ours", width: "70px", hideBelow: "lg", hiddenByDefault: true, sortValue: (b) => Number(b.isOwnTitle), cell: (b) => (b.isOwnTitle ? <Badge tone="accent">Ours</Badge> : "") },
+  ];
+
+  const chip = (value: Filter, label: string, count?: number) => (
+    <button
+      key={value || "all"}
+      onClick={() => {
+        setPage(1);
+        setFilter(value);
+      }}
+      aria-pressed={filter === value}
+      className={`min-h-11 rounded-full px-4 text-[12.5px] font-semibold ${filter === value ? "bg-accent text-white" : "bg-[var(--surface-tint)] text-[var(--ink-dim)] hover:text-[var(--ink)]"}`}
+    >
+      {label}
+      {count != null && <span className="ml-1.5 opacity-80">({count.toLocaleString()})</span>}
+    </button>
+  );
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+    <div className="flex flex-col gap-5">
+      <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl font-bold text-[var(--ink)]">Books</h1>
-          <p className="mt-1 text-[13.5px] text-[var(--ink-faint)]">{total.toLocaleString()} books in your catalog.</p>
+          <p className="mt-1 text-[13.5px] text-[var(--ink-dim)]">{total.toLocaleString()} {filter === "archived" ? "archived " : ""}books.</p>
         </div>
-        <button onClick={() => setEditing(emptyForm)} className="btn-accent rounded-full px-5 py-2.5 text-[13px] font-bold text-white">
-          + Add Book
-        </button>
+        <Button variant="primary" onClick={() => setEditing(emptyForm)}>
+          + Add book
+        </Button>
       </div>
 
-      <input
-        value={search}
-        onChange={(e) => {
-          setPage(1);
-          setSearch(e.target.value);
-        }}
-        placeholder="Search by title, author, or ID…"
-        className="w-full max-w-sm rounded-xl border border-[var(--border)] bg-[var(--surface-tint)] px-3.5 py-2.5 text-[13.5px] text-[var(--ink)] placeholder:text-[var(--ink-faint)] focus:outline-none focus:border-accent/50"
-      />
-
-      <div className="-mt-3 flex flex-wrap items-center gap-2" role="group" aria-label="Filter books">
-        {(
-          [
-            ["", "All books", null],
-            ["missing_description", "Missing description", counts.missingDescription],
-            ["missing_publisher", "Missing publisher", counts.missingPublisher],
-          ] as const
-        ).map(([value, label, count]) => (
-          <button
-            key={value || "all"}
-            onClick={() => {
-              setPage(1);
-              setFilter(value);
-            }}
-            aria-pressed={filter === value}
-            className={`rounded-full px-4 py-1.5 text-[12.5px] font-semibold ${
-              filter === value ? "bg-accent text-white" : "bg-[var(--surface-tint)] text-[var(--ink-dim)] hover:text-[var(--ink)]"
-            }`}
-          >
-            {label}
-            {count !== null && <span className="ml-1.5 opacity-80">({count.toLocaleString()})</span>}
-          </button>
-        ))}
-        {filter && <span className="text-[12px] text-[var(--ink-faint)]">Rasakatha titles first, then newest.</span>}
+      <div className="max-w-sm">
+        <Input label="Search books" type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Title, author, ID or ISBN" />
       </div>
 
-      {loading ? (
-        <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-card">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="flex items-center gap-3 border-b border-[var(--border)] px-4 py-3 last:border-b-0">
-              <div className="h-12 w-9 animate-pulse rounded-md bg-[var(--surface-tint-strong)]" />
-              <div className="flex-1 space-y-1.5">
-                <div className="h-3 w-1/3 animate-pulse rounded bg-[var(--surface-tint-strong)]" />
-                <div className="h-2.5 w-1/5 animate-pulse rounded bg-[var(--surface-tint)]" />
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : items.length === 0 ? (
-        <div className="rounded-2xl border border-[var(--border)] bg-card p-8 text-center text-[13.5px] text-[var(--ink-faint)]">
-          No books match &quot;{search}&quot;.
-        </div>
-      ) : (
-        <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-card">
-          <table className="w-full text-left text-[13px]">
-            <thead>
-              <tr className="border-b border-[var(--border)] text-[var(--ink-faint)]">
-                <th className="px-4 py-3 font-semibold" colSpan={2}>Title</th>
-                <th className="px-4 py-3 font-semibold">Author</th>
-                <th className="px-4 py-3 font-semibold">Category</th>
-                <th className="px-4 py-3 font-semibold">Price</th>
-                <th className="px-4 py-3 font-semibold">Stock</th>
-                <th className="px-4 py-3 font-semibold"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((b) => (
-                <tr key={b.id} className="border-b border-[var(--border)] transition-colors last:border-b-0 hover:bg-[var(--surface-tint)]">
-                  <td className="w-12 py-2 pl-4">
-                    {b.cover ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={b.cover} alt="" className="h-12 w-9 rounded-md border border-[var(--border)] object-cover" />
-                    ) : (
-                      <div className="grid h-12 w-9 place-items-center rounded-md bg-[var(--surface-tint-strong)] text-[9px] text-[var(--ink-faint)]">
-                        No cover
-                      </div>
-                    )}
-                  </td>
-                  <td className="max-w-[220px] truncate px-4 py-3 font-semibold text-[var(--ink)]">{b.title}</td>
-                  <td className="px-4 py-3 text-[var(--ink-dim)]">{b.author}</td>
-                  <td className="px-4 py-3 text-[var(--ink-dim)]">{b.category}</td>
-                  <td className="px-4 py-3 text-[var(--ink)]">
-                    {b.onSale && b.salePrice ? money(b.salePrice) : money(b.regularPrice)}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${b.inStock ? "bg-[#2f5a3a]/20 text-[#3f8a53]" : "bg-accent/15 text-accent"}`}>
-                      {b.inStock ? "In Stock" : "Out of Stock"}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <button onClick={() => setEditing(b)} className="mr-3 text-[12px] font-semibold text-accent-blue hover:opacity-75">
-                      Edit
-                    </button>
-                    <button onClick={() => setDeleting(b)} className="text-[12px] font-semibold text-accent hover:opacity-75">
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filter books">
+        {chip("", "All books")}
+        {chip("missing_description", "Missing description", counts.missingDescription)}
+        {chip("missing_publisher", "Missing publisher", counts.missingPublisher)}
+        {chip("archived", "Archived")}
+        {(filter === "missing_description" || filter === "missing_publisher") && <span className="text-[12px] text-[var(--ink-faint)]">Rasakatha titles first, then newest.</span>}
+      </div>
+
+      <DataTable columns={columns} rows={items} rowKey={(b) => b.id} loading={loading} caption="Books" onRowClick={setViewing} storageKey="books" toolbar={null} />
 
       {pageCount > 1 && (
         <div className="flex items-center justify-center gap-3 text-[13px] text-[var(--ink-dim)]">
-          <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)} className="rounded-full px-3 py-1.5 hover:bg-[var(--surface-tint)] disabled:opacity-40">
+          <Button size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
             ← Prev
-          </button>
-          <span>
-            Page {page} of {pageCount}
-          </span>
-          <button disabled={page >= pageCount} onClick={() => setPage((p) => p + 1)} className="rounded-full px-3 py-1.5 hover:bg-[var(--surface-tint)] disabled:opacity-40">
+          </Button>
+          Page {page} of {pageCount}
+          <Button size="sm" disabled={page >= pageCount} onClick={() => setPage((p) => p + 1)}>
             Next →
-          </button>
+          </Button>
         </div>
       )}
+
+      <Drawer
+        open={!!viewing}
+        onClose={() => setViewing(null)}
+        title={viewing?.title ?? ""}
+        subtitle={viewing ? `#${viewing.id}${viewing.author ? ` · ${viewing.author}` : ""}` : undefined}
+        footer={
+          viewing && (
+            <>
+              <a href={bookHref(viewing)} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center px-3 text-[13px] font-semibold text-accent-blue hover:opacity-75">
+                View on store ↗
+              </a>
+              {filter === "archived" ? (
+                <Button variant="primary" onClick={() => restore(viewing)}>
+                  Restore
+                </Button>
+              ) : (
+                <>
+                  <Button variant="danger" onClick={() => setArchiving(viewing)}>
+                    Archive
+                  </Button>
+                  <Button variant="primary" onClick={() => { setEditing(viewing); setViewing(null); }}>
+                    Edit
+                  </Button>
+                </>
+              )}
+            </>
+          )
+        }
+      >
+        {viewing && (
+          <div className="flex flex-col gap-5">
+            <div className="flex gap-4">
+              <Cover src={viewing.cover} className="h-40 w-28" />
+              <dl className="grid flex-1 grid-cols-[auto_1fr] content-start gap-x-4 gap-y-1.5 text-[13px]">
+                <dt className="text-[var(--ink-faint)]">Price</dt><dd>{money(viewing.regularPrice)}{viewing.onSale && viewing.salePrice ? ` → ${money(viewing.salePrice)}` : ""}</dd>
+                <dt className="text-[var(--ink-faint)]">Stock</dt><dd>{viewing.stockQty != null ? `${viewing.stockQty} copies` : viewing.inStock ? "In stock (not counted)" : "Out of stock"}</dd>
+                <dt className="text-[var(--ink-faint)]">Category</dt><dd>{viewing.category}</dd>
+                <dt className="text-[var(--ink-faint)]">Publisher</dt><dd>{viewing.publisher ?? "-"} {viewing.isOwnTitle && <Badge tone="accent">Ours</Badge>}</dd>
+                <dt className="text-[var(--ink-faint)]">Published</dt><dd>{viewing.publishedAt ? new Date(viewing.publishedAt).toLocaleDateString("en-GB") : "-"}</dd>
+                {viewing.isbn && (<><dt className="text-[var(--ink-faint)]">ISBN</dt><dd>{viewing.isbn}</dd></>)}
+                {viewing.pages && (<><dt className="text-[var(--ink-faint)]">Pages</dt><dd>{viewing.pages}</dd></>)}
+              </dl>
+            </div>
+            <div>
+              <h3 className="mb-1 text-[12px] font-bold uppercase tracking-wide text-[var(--ink-faint)]">Description</h3>
+              {viewing.blurb?.trim() ? <p className="whitespace-pre-line text-[13.5px] leading-relaxed text-[var(--ink)]">{viewing.blurb}</p> : <p className="text-[13px] text-amber-600">No description yet.</p>}
+            </div>
+          </div>
+        )}
+      </Drawer>
 
       {editing && (
         <BookForm
@@ -478,23 +420,27 @@ export default function AdminBooksPage() {
           publishers={publishers}
           onCancel={() => setEditing(null)}
           onSaved={() => {
+            toast(editing.id ? "Book updated" : "Book added");
             setEditing(null);
-            setToast(editing.id ? "Book updated" : "Book added");
             load();
           }}
         />
       )}
 
-      {deleting && (
-        <ConfirmModal
-          title="Delete this book?"
-          description={`"${deleting.title}" will be removed from the store immediately and can't be undone.`}
-          onCancel={() => setDeleting(null)}
-          onConfirm={handleDelete}
-        />
-      )}
-
-      {toast && <Toast message={toast} />}
+      <ConfirmDialog
+        open={!!archiving}
+        danger
+        title="Archive this book?"
+        description={archiving ? `“${archiving.title}” is hidden from the store straight away. Nothing is deleted: you can restore it from the Archived filter.` : undefined}
+        confirmLabel="Archive"
+        onCancel={() => {
+          setArchiving(null);
+          setReason("");
+        }}
+        onConfirm={() => reason.trim().length >= 3 && archive()}
+      >
+        <Input label="Why? (required)" data-autofocus value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. out of print, duplicate" />
+      </ConfirmDialog>
     </div>
   );
 }
