@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   openGraph: og("/"),
 };
 
-const ROW = 12;
+const ROW = 10;
 
 export default async function Home() {
   const [slides, catalog, categories] = await Promise.all([getHeroSlides(), getCatalog(), getCategories()]);

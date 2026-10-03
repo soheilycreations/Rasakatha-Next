@@ -33,8 +33,8 @@ export default function HomeView({
 
       <TrustStrip />
 
-      {rowsBeforeGenres.map((row, i) => (
-        <HomeRow key={row.title} title={row.title} items={row.items} viewAllHref={row.viewAllHref} priorityCount={i === 0 ? 3 : 0} />
+      {rowsBeforeGenres.map((row) => (
+        <HomeRow key={row.title} title={row.title} items={row.items} viewAllHref={row.viewAllHref} />
       ))}
 
       <CategoryTiles categories={categories} />

@@ -16,6 +16,7 @@ export default function HeroSection({ slides, heroBooks }: { slides: HeroSlide[]
         <div
           key={s.id}
           data-slide={i}
+          data-current={i === 0 ? "" : undefined}
           className="absolute left-1/2 top-0 cursor-pointer overflow-hidden rounded-[22px]"
           style={slideStyle(circularOffset(i, 0, n))}
         >
@@ -23,7 +24,7 @@ export default function HeroSection({ slides, heroBooks }: { slides: HeroSlide[]
             src={s.cover}
             alt={s.title}
             fill
-            sizes="(max-width: 767px) 68vw, 640px"
+            sizes="(max-width: 1023px) 100vw, 640px"
             className="pointer-events-none rounded-[22px] object-cover"
             style={{ clipPath: "inset(0 round 22px)" }}
             priority={i === 0}

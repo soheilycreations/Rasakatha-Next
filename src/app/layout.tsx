@@ -124,7 +124,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body className="h-full">
         <Analytics />
-        <div className="grain-overlay" aria-hidden="true" />
         {/* Storefront chrome (sidebar, search, cart) stays mounted across pages. */}
         <StoreShell trending={trending}>{children}</StoreShell>
       </body>

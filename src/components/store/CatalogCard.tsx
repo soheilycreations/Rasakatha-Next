@@ -10,7 +10,7 @@ import { AddToCartButton, WishButton } from "./islands";
 export default function CatalogCard({ book, priority = false }: { book: CatalogBook; priority?: boolean }) {
   const href = bookHref(book);
   return (
-    <div className="group relative flex flex-col rounded-[18px] border border-[var(--border)] bg-card p-3 pb-4 transition-all duration-[480ms] ease-[var(--ease-premium)] hover:z-10 hover:-translate-y-1.5 hover:shadow-[0_22px_40px_-18px_rgba(0,0,0,0.35)]">
+    <div className="group relative flex flex-col rounded-[18px] border border-[var(--border)] bg-card p-3 pb-4 transition-[transform,box-shadow] duration-[480ms] ease-[var(--ease-premium)] motion-reduce:transition-none hover:z-10 hover:-translate-y-1.5 hover:shadow-[0_22px_40px_-18px_rgba(0,0,0,0.35)]">
       <div data-cover className="relative z-10 transition-transform duration-[480ms] ease-[var(--ease-premium)] group-hover:scale-[1.06]">
         <Link href={href} tabIndex={-1} aria-hidden="true" className="block">
           <BookCover
@@ -21,6 +21,7 @@ export default function CatalogCard({ book, priority = false }: { book: CatalogB
             className="aspect-[2/3] rounded-xl"
             imgClassName="rounded-xl"
             priority={priority}
+            sizes="(max-width: 640px) 90vw, 220px"
           />
         </Link>
         <WishButton
@@ -41,7 +42,7 @@ export default function CatalogCard({ book, priority = false }: { book: CatalogB
         {book.inStock && (
           <AddToCartButton
             book={book}
-            className="absolute bottom-2 right-2 grid h-10 w-10 translate-y-2 place-items-center rounded-full bg-accent text-white opacity-0 shadow-[0_10px_22px_-6px_rgba(239,66,56,0.9)] transition-all duration-200 hover:scale-110 active:scale-95 group-hover:translate-y-0 group-hover:opacity-100 focus-visible:translate-y-0 focus-visible:opacity-100 max-md:translate-y-0 max-md:opacity-100"
+            className="absolute bottom-2 right-2 grid h-10 w-10 translate-y-2 place-items-center rounded-full bg-accent text-white opacity-0 shadow-[0_10px_22px_-6px_rgba(239,66,56,0.9)] transition-all duration-200 hover:scale-110 active:scale-95 group-hover:translate-y-0 group-hover:opacity-100 focus-visible:translate-y-0 focus-visible:opacity-100 max-md:translate-y-0 max-md:opacity-100 [@media(hover:none)]:translate-y-0 [@media(hover:none)]:opacity-100"
           />
         )}
       </div>

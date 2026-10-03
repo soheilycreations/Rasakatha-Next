@@ -19,7 +19,7 @@ export default function RowCard({ book, priority = false }: { book: CatalogBook;
         data-cover
         className="relative z-10 transition-transform duration-[480ms] ease-[var(--ease-premium)] group-hover:-translate-y-2 group-hover:scale-[1.07]"
       >
-        <div className="relative aspect-[2/3] rounded-xl border border-[var(--border)] bg-card shadow-[0_10px_24px_rgba(0,0,0,0.3)] transition-shadow duration-[480ms] ease-[var(--ease-premium)] group-hover:shadow-[0_30px_54px_-14px_var(--glow)]">
+        <div className="relative aspect-[2/3] rounded-xl border border-[var(--border)] bg-card shadow-[0_10px_24px_rgba(0,0,0,0.3)] transition-shadow duration-[480ms] ease-[var(--ease-premium)] motion-reduce:transition-none group-hover:shadow-[0_30px_54px_-14px_var(--glow)]">
           <Link href={href} tabIndex={-1} aria-hidden="true" className="block h-full w-full">
             <BookCover
               cover={book.cover || undefined}
@@ -28,13 +28,15 @@ export default function RowCard({ book, priority = false }: { book: CatalogBook;
               className="h-full w-full"
               imgClassName="rounded-xl"
               priority={priority}
+              sizes="(max-width: 640px) 152px, 168px"
             />
           </Link>
-          <div className="pointer-events-none absolute inset-0 rounded-xl bg-gradient-to-t from-black/85 via-black/0 to-black/0 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+          {/* hover-only overlays are not rendered at all on touch devices */}
+          <div className="pointer-events-none absolute inset-0 rounded-xl bg-gradient-to-t from-black/85 via-black/0 to-black/0 opacity-0 transition-opacity duration-300 group-hover:opacity-100 [@media(hover:none)]:hidden" />
 
           <WishButton
             id={book.id}
-            className="absolute right-2 top-2 grid h-8 w-8 translate-y-[-4px] place-items-center rounded-full bg-black/50 opacity-0 backdrop-blur-sm transition-all duration-200 focus-visible:translate-y-0 focus-visible:opacity-100 group-hover:translate-y-0 group-hover:opacity-100"
+            className="absolute right-2 top-2 grid h-8 w-8 translate-y-[-4px] place-items-center rounded-full bg-black/50 opacity-0 backdrop-blur-sm transition-all duration-200 focus-visible:translate-y-0 focus-visible:opacity-100 group-hover:translate-y-0 group-hover:opacity-100 [@media(hover:none)]:hidden"
           />
 
           {!book.inStock && (
@@ -48,7 +50,7 @@ export default function RowCard({ book, priority = false }: { book: CatalogBook;
             </span>
           )}
 
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 flex translate-y-2 items-end justify-between gap-1.5 p-2.5 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 flex translate-y-2 [@media(hover:none)]:hidden items-end justify-between gap-1.5 p-2.5 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
             <div className="flex min-w-0 flex-col leading-tight">
               {book.onSale && book.salePrice ? (
                 <>

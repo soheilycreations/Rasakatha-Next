@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { HeroSlide } from "@/lib/hero-slides";
 import type { CatalogBook } from "@/lib/catalog";
 import { triggerFlyToCart } from "@/lib/fly-to-cart";
-import { circularOffset, HERO_ROOT_STYLE, slideStyle } from "@/lib/hero-style";
+import { circularOffset, slideStyle } from "@/lib/hero-style";
 import { IconCart, IconHeart } from "./icons";
 import { useStore } from "./StoreContext";
 
@@ -36,12 +36,17 @@ export default function HeroCarousel({
   useEffect(() => {
     rootRef.current?.querySelectorAll<HTMLElement>("[data-slide]").forEach((el) => {
       const i = Number(el.dataset.slide);
-      Object.assign(el.style, slideStyle(circularOffset(i, active, n)));
+      const offset = circularOffset(i, active, n);
+      Object.assign(el.style, slideStyle(offset));
+      el.toggleAttribute("data-current", offset === 0);
+      // slides are lazy images; fetch the neighbours of the current slide so swiping never shows a blank slide
+      if (Math.abs(offset) <= 1) el.querySelector("img")?.setAttribute("loading", "eager");
     });
   }, [active, n]);
 
   useEffect(() => {
-    if (n < 2) return;
+    // no autoplay for people who asked for reduced motion
+    if (n < 2 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const id = setTimeout(() => setActive((a) => (a + 1) % n), INTERVAL);
     return () => clearTimeout(id);
   }, [active, n]);
@@ -81,8 +86,7 @@ export default function HeroCarousel({
       onTouchStart={(e) => startDrag(e.touches[0].clientX)}
       onTouchEnd={(e) => endDrag(e.changedTouches[0].clientX)}
       onClick={onSlideClick}
-      className="relative mx-4 mb-8 touch-pan-y select-none overflow-hidden rounded-[10px] sm:mx-8 [container-type:inline-size]"
-      style={HERO_ROOT_STYLE}
+      className="hero-root relative mx-4 mb-8 touch-pan-y select-none overflow-hidden rounded-[10px] sm:mx-8 [container-type:inline-size]"
     >
       {/* sizing box: gives the container its height (slides are absolutely positioned) */}
       <div className="mx-auto" style={{ width: "var(--hero-w)", aspectRatio: "1695 / 1020" }} />
@@ -129,8 +133,8 @@ export default function HeroCarousel({
         )}
       </div>
 
-      <div className="pointer-events-none absolute inset-y-0 left-0 z-20 w-16 bg-gradient-to-r from-panel via-panel/70 to-transparent sm:w-24" />
-      <div className="pointer-events-none absolute inset-y-0 right-0 z-20 w-16 bg-gradient-to-l from-panel via-panel/70 to-transparent sm:w-24" />
+      <div className="hero-fade pointer-events-none absolute inset-y-0 left-0 z-20 w-16 bg-gradient-to-r from-panel via-panel/70 to-transparent sm:w-24" />
+      <div className="hero-fade pointer-events-none absolute inset-y-0 right-0 z-20 w-16 bg-gradient-to-l from-panel via-panel/70 to-transparent sm:w-24" />
 
       <div className="absolute bottom-5 left-1/2 z-30 flex -translate-x-1/2 gap-2">
         {slides.map((s, i) => (

@@ -9,6 +9,7 @@ export default function BookCover({
   className = "",
   imgClassName = "",
   priority = false,
+  sizes = "(max-width: 640px) 45vw, 200px",
   children,
 }: {
   cover?: string;
@@ -19,6 +20,8 @@ export default function BookCover({
   imgClassName?: string;
   // set for the likely LCP image so it's preloaded instead of lazy-loaded
   priority?: boolean;
+  // the rendered width of the image, so next/image picks a right-sized file
+  sizes?: string;
   children?: React.ReactNode;
 }) {
   if (cover) {
@@ -29,7 +32,7 @@ export default function BookCover({
           alt={alt}
           fill
           priority={priority}
-          sizes="(max-width: 640px) 45vw, 200px"
+          sizes={sizes}
           className={`object-cover ${imgClassName}`}
           // Optimised covers (.webp, <=900px: scripts/optimize-covers.ts and the admin upload) go
           // through next/image for responsive sizes. Older covers are still raw 5-8MB scans that

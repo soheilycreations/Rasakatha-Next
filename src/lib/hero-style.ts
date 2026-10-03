@@ -34,4 +34,3 @@ export function slideStyle(offset: number): CSSProperties {
   };
 }
 
-export const HERO_ROOT_STYLE = { "--hero-w": "clamp(220px, 72cqw, 640px)", perspective: 1600 } as CSSProperties;

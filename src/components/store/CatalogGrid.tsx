@@ -37,7 +37,7 @@ export default function CatalogGrid({
       {items.map((book, i) => (
         <CatalogCard
           key={book.id}
-          priority={i < 4}
+          priority={i < 2}
           book={book}
         />
       ))}
