@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { og } from "@/lib/site";
 import { notFound } from "next/navigation";
 import CatalogListing from "@/components/store/CatalogListing";
+import CatalogGrid from "@/components/store/CatalogGrid";
 import { forCards, getByCategory, getCategories, getCategoryBySlug, paginate } from "@/lib/catalog";
 import { categoryHref } from "@/lib/links";
 
@@ -39,6 +40,7 @@ export default async function CategoryPage({ params }: Props) {
       title={`${name} Books`}
       query={`category=${encodeURIComponent(name)}`}
       initialItems={forCards(first.items)}
+      initialGrid={<CatalogGrid items={forCards(first.items)} emptyMessage="No books here yet." />}
       initialPageCount={first.pageCount}
       initialTotal={first.total}
       chips={categories.map((c) => ({ name: c.name, count: c.count }))}

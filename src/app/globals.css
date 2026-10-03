@@ -96,20 +96,6 @@ body {
   background: var(--app-backdrop);
 }
 
-.grain-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-  pointer-events: none;
-  opacity: 0.03;
-  mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-
-[data-theme="light"] .grain-overlay {
-  opacity: 0.015;
-}
-
 .diagonal-tint::before {
   content: "";
   position: absolute;
@@ -399,4 +385,60 @@ select:focus-visible {
 }
 input.field-bare:focus-visible {
   outline: none;
+}
+
+/* ---- Paint-cost savers ---------------------------------------------------- */
+
+/* Film grain: a small static tile painted on the big surfaces (desktop only, no blend mode,
+   not fixed, not animated). Removed on mobile and for reduced motion. */
+:root {
+  --grain-tile: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+}
+[data-theme="light"] {
+  --grain-tile: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.018'/%3E%3C/svg%3E");
+}
+@media (min-width: 769px) and (prefers-reduced-motion: no-preference) {
+  .bg-panel,
+  .bg-sidebar {
+    background-image: var(--grain-tile);
+  }
+}
+
+/* backdrop-filter is expensive on phones: the semi-opaque backgrounds stay, the blur goes. */
+@media (max-width: 768px) {
+  [class*="backdrop-blur"] {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+}
+
+/* Hero: 3D carousel with side slides on desktop (>=1024px); a flat single slide below that. */
+.hero-root {
+  --hero-w: 100cqw;
+}
+@media (min-width: 1024px) {
+  .hero-root {
+    --hero-w: clamp(220px, 72cqw, 640px);
+    perspective: 1600px;
+  }
+}
+@media (max-width: 1023px) {
+  .hero-root [data-slide] {
+    transform: none !important;
+    opacity: 1 !important;
+    filter: none !important;
+    box-shadow: none !important;
+    transition: none !important;
+  }
+  .hero-root [data-slide]:not([data-current]) {
+    display: none !important;
+  }
+  .hero-root .hero-fade {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-root [data-slide] {
+    transition: none !important;
+  }
 }

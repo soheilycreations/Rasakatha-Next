@@ -56,3 +56,5 @@ next-env.d.ts
 # Playwright
 /test-results/
 /playwright-report/
+supabase/data/legacy-details.json
+.tmp/

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import type { CatalogBook } from "@/lib/catalog";
 import type { CartItem } from "@/lib/cart";
 import type { Account } from "@/lib/account";
@@ -10,12 +11,16 @@ import type { Customer, StoredOrder } from "@/lib/orders";
 import { authorHref, bookHref, ROUTES } from "@/lib/links";
 import Sidebar from "./Sidebar";
 import TopBar from "./TopBar";
-import AuthModal from "./AuthModal";
+
 import { submitPayHereForm } from "@/lib/payhere-client";
 import { trackAddToCart } from "@/lib/analytics";
-import FlyToCartLayer from "./FlyToCartLayer";
 import { StoreContext, type StoreState } from "./StoreContext";
 import { IconHome, IconCategories, IconHeart, IconCart } from "./icons";
+import type { Trending } from "@/lib/server/trending";
+
+// Loaded on demand so they stay out of the initial JavaScript
+const AuthModal = dynamic(() => import("./AuthModal"), { ssr: false });
+const FlyToCartLayer = dynamic(() => import("./FlyToCartLayer"), { ssr: false });
 
 const WISH_STORAGE_KEY = "rasakatha:wishlist";
 const CART_STORAGE_KEY = "rasakatha:cart";
@@ -35,13 +40,13 @@ function navForPath(pathname: string): string {
 
 // The shell wraps every page from the root layout; the admin panel has its own
 // chrome, so it is passed through untouched.
-export default function StoreShell({ children }: { children: React.ReactNode }) {
+export default function StoreShell({ children, trending }: { children: React.ReactNode; trending: Trending }) {
   const pathname = usePathname();
   if (pathname.startsWith("/admin")) return <>{children}</>;
-  return <StorefrontShell>{children}</StorefrontShell>;
+  return <StorefrontShell trending={trending}>{children}</StorefrontShell>;
 }
 
-function StorefrontShell({ children }: { children: React.ReactNode }) {
+function StorefrontShell({ children, trending }: { children: React.ReactNode; trending: Trending }) {
   const router = useRouter();
   const pathname = usePathname();
   const [wish, setWish] = useState<Record<string, boolean>>({});
@@ -180,6 +185,7 @@ function StorefrontShell({ children }: { children: React.ReactNode }) {
           author: book.author,
           cover: book.cover,
           price: book.onSale && book.salePrice ? book.salePrice : book.regularPrice,
+          regularPrice: book.regularPrice,
           weight: book.weight,
         });
       },
@@ -231,6 +237,7 @@ function StorefrontShell({ children }: { children: React.ReactNode }) {
 
   const sidebarProps = {
     nav,
+    trending,
     onNavSelect: (label: string) => router.push(NAV_ROUTES[label] ?? ROUTES.home),
     onOpenBook: (book: { id: string; title: string }) => router.push(bookHref(book)),
   };

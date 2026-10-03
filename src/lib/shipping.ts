@@ -13,7 +13,7 @@ const ZONE_RATES: Record<string, RateTable> = {
 };
 
 // Towns explicitly configured as their own courier zone (cheaper, closer-in
-// service). Everything else in the district list below falls back to REST.
+// service). Every other town (all of Sri Lanka Post's list) falls back to REST.
 const ZONE_TOWNS: Record<string, string> = {
   Colombo: "A",
   Narahempita: "A",
@@ -47,67 +47,46 @@ const ZONE_TOWNS: Record<string, string> = {
   Pussellawa: "D",
 };
 
-export type District = { name: string; towns: string[] };
+// ---- Locations -------------------------------------------------------------------------------
+// Every Sri Lanka Post town/city with its district and postal code (2,100+ entries).
+// Source: github.com/madurapa/sri-lanka-provinces-districts-cities (MIT License), built by
+// scripts/build-locations.mjs into src/lib/data/sl-locations.json. Rows: [town, district, postalCode].
+// Towns from the previous hand-written list that the dataset lacks were kept (no postal code).
+import raw from "./data/sl-locations.json";
 
-export const SRI_LANKA_LOCATIONS: District[] = [
-  {
-    name: "Colombo",
-    towns: [
-      "Colombo", "Narahempita", "Slave Island", "Battaramulla", "Dehiwala", "Kalubowila",
-      "Mount Lavinia", "Nawala", "Nugegoda", "Rajagiriya", "Ratmalana",
-      "Sri Jayawardenepura Kotte", "Welikada", "Attidiya", "Athurugiriya", "Avissawella",
-      "Boralesgamuwa", "Homagama", "Kaduwela", "Kesbewa", "Kottawa", "Maharagama",
-      "Malabe", "Pannipitiya", "Piliyandala", "Padukka", "Moratuwa",
-    ],
-  },
-  {
-    name: "Gampaha",
-    towns: [
-      "Negombo", "Gampaha", "Ja-Ela", "Wattala", "Kelaniya", "Kadawatha", "Ragama",
-      "Minuwangoda", "Divulapitiya", "Nittambuwa", "Kiribathgoda",
-    ],
-  },
-  {
-    name: "Kalutara",
-    towns: ["Kalutara", "Panadura", "Horana", "Beruwala", "Aluthgama", "Matugama", "Wadduwa"],
-  },
-  {
-    name: "Kandy",
-    towns: ["Kandy", "Peradeniya", "Gampola", "Nawalapitiya", "Katugastota", "Pussellawa", "Wattegama"],
-  },
-  { name: "Matale", towns: ["Matale", "Dambulla", "Galewela", "Naula"] },
-  {
-    name: "Nuwara Eliya",
-    towns: ["Nuwara Eliya", "Hatton", "Nanu Oya", "Talawakele", "Ginigathhena"],
-  },
-  { name: "Galle", towns: ["Galle", "Hikkaduwa", "Ambalangoda", "Elpitiya", "Baddegama"] },
-  { name: "Matara", towns: ["Matara", "Weligama", "Akuressa", "Deniyaya"] },
-  { name: "Hambantota", towns: ["Hambantota", "Tangalle", "Tissamaharama", "Ambalantota"] },
-  { name: "Jaffna", towns: ["Jaffna", "Chavakachcheri", "Point Pedro", "Nallur"] },
-  { name: "Kilinochchi", towns: ["Kilinochchi", "Pallai"] },
-  { name: "Mannar", towns: ["Mannar", "Nanaddan"] },
-  { name: "Vavuniya", towns: ["Vavuniya", "Nedunkeni"] },
-  { name: "Mullaitivu", towns: ["Mullaitivu", "Puthukkudiyiruppu"] },
-  { name: "Batticaloa", towns: ["Batticaloa", "Kattankudy", "Eravur", "Valachchenai"] },
-  { name: "Ampara", towns: ["Ampara", "Kalmunai", "Sammanthurai", "Akkaraipattu"] },
-  { name: "Trincomalee", towns: ["Trincomalee", "Kinniya", "Kantale"] },
-  { name: "Kurunegala", towns: ["Kurunegala", "Kuliyapitiya", "Narammala", "Pannala"] },
-  { name: "Puttalam", towns: ["Puttalam", "Chilaw", "Wennappuwa", "Marawila"] },
-  { name: "Anuradhapura", towns: ["Anuradhapura", "Kekirawa", "Medawachchiya", "Thambuttegama"] },
-  { name: "Polonnaruwa", towns: ["Polonnaruwa", "Kaduruwela", "Hingurakgoda"] },
-  { name: "Badulla", towns: ["Badulla", "Bandarawela", "Haputale", "Welimada", "Mahiyanganaya"] },
-  { name: "Monaragala", towns: ["Monaragala", "Wellawaya", "Kataragama", "Bibile"] },
-  { name: "Ratnapura", towns: ["Ratnapura", "Balangoda", "Embilipitiya", "Pelmadulla"] },
-  { name: "Kegalle", towns: ["Kegalle", "Mawanella", "Warakapola", "Rambukkana"] },
-];
+export type Location = { town: string; district: string; postalCode: string };
+
+export const LOCATIONS: Location[] = (raw as [string, string, string][]).map(([town, district, postalCode]) => ({
+  town,
+  district,
+  postalCode,
+}));
+
+export const DISTRICTS: string[] = [...new Set(LOCATIONS.map((l) => l.district))].sort();
+
+const TOWN_NAMES = new Set(LOCATIONS.map((l) => l.town));
+export const isKnownTown = (town: string) => TOWN_NAMES.has(town);
+export const isKnownDistrict = (district: string) => DISTRICTS.includes(district);
+
+// Same place as a zoned town, spelled the way Sri Lanka Post spells it. They get that town's zone;
+// no other town changes zone.
+const ZONE_ALIASES: Record<string, string> = {
+  Narahenpita: "A",
+  "Sri Jayawardenepura": "B",
+};
+const COLOMBO_POSTAL_AREA = /^Colombo (0?[1-9]|1[0-5])$/; // "Colombo 1" .. "Colombo 15" are Colombo (zone A)
 
 export function zoneForTown(town: string): string {
-  return ZONE_TOWNS[town] ?? "REST";
+  if (ZONE_TOWNS[town]) return ZONE_TOWNS[town];
+  if (ZONE_ALIASES[town]) return ZONE_ALIASES[town];
+  if (COLOMBO_POSTAL_AREA.test(town)) return "A";
+  return "REST";
 }
 
-export function calculateShippingFee(town: string, totalWeightGrams: number): number {
+// townNotInList: the customer typed their own town (picked only a district), which is priced as REST.
+export function calculateShippingFee(town: string, totalWeightGrams: number, opts?: { townNotInList?: boolean }): number {
   if (totalWeightGrams <= 0) return 0;
-  const zone = zoneForTown(town);
+  const zone = opts?.townNotInList ? "REST" : zoneForTown(town);
   const table = ZONE_RATES[zone] ?? ZONE_RATES.REST;
   const bracket = Math.min(table.length - 1, Math.max(0, Math.ceil(totalWeightGrams / 1000) - 1));
   return table[bracket];

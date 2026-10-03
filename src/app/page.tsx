@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { og } from "@/lib/site";
 import HomeView, { type HomeRowData } from "@/components/store/HomeView";
 import { getHeroSlides } from "@/lib/server/heroSlides";
-import { forCards, getByCategory, getByPublisher, getCategories, getCatalog, getNewest, getOnSale } from "@/lib/catalog";
+import { forCards, getByCategory, getCategories, getCatalog, getNewest, getOnSale, getOwnTitles } from "@/lib/catalog";
 import { categoryHref, ROUTES } from "@/lib/links";
 import type { CatalogBook } from "@/lib/catalog";
 
@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   openGraph: og("/"),
 };
 
-const ROW = 12;
+const ROW = 10;
 
 export default async function Home() {
   const [slides, catalog, categories] = await Promise.all([getHeroSlides(), getCatalog(), getCategories()]);
@@ -28,7 +28,7 @@ export default async function Home() {
 
   const inStock = (items: CatalogBook[]) => forCards(items.filter((b) => b.inStock).slice(0, ROW));
   const [fromRasakatha, newest, sale, novels, poetry, children] = await Promise.all([
-    getByPublisher("RasaKatha"),
+    getOwnTitles(ROW),
     getNewest(ROW),
     getOnSale(ROW),
     getByCategory("Novel"),
@@ -37,8 +37,8 @@ export default async function Home() {
   ]);
 
   const rowsBeforeGenres: HomeRowData[] = [
-    { title: "From Rasakatha Publishers", items: inStock(fromRasakatha) },
     { title: "New Arrivals", items: forCards(newest), viewAllHref: ROUTES.newArrivals },
+    { title: "From Rasakatha Publishers", items: inStock(fromRasakatha) },
   ];
   const rowsAfterAbout: HomeRowData[] = [
     { title: "Books on Sale", items: forCards(sale), viewAllHref: ROUTES.sale },

@@ -22,6 +22,11 @@ export type Customer = {
   giftPhone?: string;
   giftCity?: string;
   giftAddress?: string;
+  // set when the customer typed their own town (it wasn't in the list): priced as the standard zone
+  district?: string;
+  townNotInList?: boolean;
+  giftDistrict?: string;
+  giftTownNotInList?: boolean;
 };
 
 export type StoredOrder = {

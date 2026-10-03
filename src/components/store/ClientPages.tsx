@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ROUTES } from "@/lib/links";
-import { useCardHandlers, useStore } from "./StoreContext";
+import { useStore } from "./StoreContext";
 import LibraryView from "./LibraryView";
 import CartPage from "./CartPage";
 import CheckoutPage from "./CheckoutPage";
@@ -16,10 +16,10 @@ function Pad({ children }: { children: React.ReactNode }) {
 }
 
 export function LibraryClient() {
-  const handlers = useCardHandlers();
+  const s = useStore();
   return (
     <Pad>
-      <LibraryView {...handlers} />
+      <LibraryView wish={s.wish} />
     </Pad>
   );
 }

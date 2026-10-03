@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import CatalogListing from "@/components/store/CatalogListing";
+import CatalogGrid from "@/components/store/CatalogGrid";
 import { forCards, paginate, searchCatalog } from "@/lib/catalog";
 
 // Search results are never worth indexing (infinite query space, thin pages).
@@ -27,6 +28,7 @@ export default async function SearchPage({ searchParams }: Props) {
       title={`Search results for “${q}”`}
       query={`search=${encodeURIComponent(q)}`}
       initialItems={forCards(first.items)}
+      initialGrid={<CatalogGrid items={forCards(first.items)} emptyMessage="No books here yet." />}
       initialPageCount={first.pageCount}
       initialTotal={first.total}
     />

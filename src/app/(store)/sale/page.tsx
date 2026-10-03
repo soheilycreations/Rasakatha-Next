@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { og } from "@/lib/site";
 import CatalogListing from "@/components/store/CatalogListing";
+import CatalogGrid from "@/components/store/CatalogGrid";
 import { forCards, getOnSale, paginate } from "@/lib/catalog";
 
 export const revalidate = 300;
@@ -20,6 +21,7 @@ export default async function SalePage() {
       intro="Every discounted title in one place — while stocks last."
       query="category=__sale__"
       initialItems={forCards(first.items)}
+      initialGrid={<CatalogGrid items={forCards(first.items)} emptyMessage="No books here yet." />}
       initialPageCount={first.pageCount}
       initialTotal={first.total}
     />

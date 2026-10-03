@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { og } from "@/lib/site";
 import CatalogListing from "@/components/store/CatalogListing";
+import CatalogGrid from "@/components/store/CatalogGrid";
 import { applyListOptions, forCards, getCatalog, paginate } from "@/lib/catalog";
 
 export const revalidate = 300;
@@ -21,6 +22,7 @@ export default async function NewArrivalsPage() {
       intro="Just landed on our shelves."
       query=""
       initialItems={forCards(first.items)}
+      initialGrid={<CatalogGrid items={forCards(first.items)} emptyMessage="No books here yet." />}
       initialPageCount={first.pageCount}
       initialTotal={first.total}
       defaultOrder="newest"

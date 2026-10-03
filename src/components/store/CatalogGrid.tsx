@@ -3,18 +3,10 @@ import CatalogCard from "./CatalogCard";
 
 export default function CatalogGrid({
   items,
-  wish,
-  onToggleWish,
-  onAdd,
-  onOpen,
   loading,
   emptyMessage,
 }: {
   items: CatalogBook[];
-  wish: Record<string, boolean>;
-  onToggleWish: (id: string) => void;
-  onAdd: (book: CatalogBook) => void;
-  onOpen: (book: CatalogBook) => void;
   loading?: boolean;
   emptyMessage?: string;
 }) {
@@ -45,12 +37,8 @@ export default function CatalogGrid({
       {items.map((book, i) => (
         <CatalogCard
           key={book.id}
-          priority={i < 4}
+          priority={i < 2}
           book={book}
-          wished={!!wish[book.id]}
-          onToggleWish={onToggleWish}
-          onAdd={onAdd}
-          onOpen={onOpen}
         />
       ))}
     </div>

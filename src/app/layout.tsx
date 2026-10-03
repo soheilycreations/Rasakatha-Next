@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { SITE } from "@/lib/site";
+import { getTrending } from "@/lib/server/trending";
 import Analytics from "@/components/Analytics";
 import StoreShell from "@/components/store/StoreShell";
 import { Manrope, Playfair_Display, IBM_Plex_Mono } from "next/font/google";
@@ -9,19 +10,22 @@ const manrope = Manrope({
   variable: "--font-sans",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
+  display: "swap",
 });
 
 const playfair = Playfair_Display({
   variable: "--font-display",
   subsets: ["latin"],
-  weight: ["500", "600", "700", "800"],
-  style: ["normal", "italic"],
+  // only bold/extrabold headings are used, and never italic
+  weight: ["700", "800"],
+  display: "swap",
 });
 
 const plexMono = IBM_Plex_Mono({
   variable: "--font-mono",
   subsets: ["latin"],
-  weight: ["400", "500"],
+  weight: ["400"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -100,7 +104,11 @@ const THEME_INIT_SCRIPT = `
 })();
 `;
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+// The sidebar's trending list is rendered here on the server and refreshed every 5 minutes.
+export const revalidate = 300;
+
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const trending = await getTrending(10).catch(() => ({ items: [], basis: "all_time" as const }));
   return (
     <html
       lang="en"
@@ -116,9 +124,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="h-full">
         <Analytics />
-        <div className="grain-overlay" aria-hidden="true" />
         {/* Storefront chrome (sidebar, search, cart) stays mounted across pages. */}
-        <StoreShell>{children}</StoreShell>
+        <StoreShell trending={trending}>{children}</StoreShell>
       </body>
     </html>
   );

@@ -1,5 +1,6 @@
 import type { CartItem } from "@/lib/cart";
 import { money, tintForId } from "@/lib/format";
+import { lineSavings, regularSubtotal, totalSavings } from "@/lib/savings";
 import BookCover from "./BookCover";
 import { IconCart } from "./icons";
 
@@ -17,6 +18,8 @@ export default function CartPage({
   onContinueShopping: () => void;
 }) {
   const subtotal = items.reduce((sum, x) => sum + (x.price ?? 0) * x.qty, 0);
+  const savings = totalSavings(items);
+  const originalSubtotal = regularSubtotal(items);
 
   if (items.length === 0) {
     return (
@@ -43,12 +46,12 @@ export default function CartPage({
         Your Cart <span className="font-sans text-sm font-normal text-[var(--ink-faint)]">({items.length} items)</span>
       </h1>
 
-      <div className="grid gap-8 lg:grid-cols-[1fr_340px]">
-        <div className="flex flex-col gap-3">
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_clamp(300px,28vw,360px)]">
+        <div className="flex min-w-0 flex-col gap-3">
           {items.map((item) => (
             <div
               key={item.id}
-              className="flex gap-4 rounded-2xl border border-[var(--border)] bg-card p-3.5"
+              className="flex min-w-0 gap-4 rounded-2xl border border-[var(--border)] bg-card p-3.5"
             >
               <BookCover
                 cover={item.cover || undefined}
@@ -58,7 +61,7 @@ export default function CartPage({
               />
               <div className="flex min-w-0 flex-1 flex-col justify-between">
                 <div>
-                  <div className="truncate text-[15px] font-semibold text-[var(--ink)]">{item.title}</div>
+                  <div className="line-clamp-2 break-words text-[15px] font-semibold text-[var(--ink)]">{item.title}</div>
                   {item.author && (
                     <div className="mt-0.5 truncate text-[12.5px] text-[var(--ink-faint)]">{item.author}</div>
                   )}
@@ -83,7 +86,12 @@ export default function CartPage({
                       +
                     </button>
                   </div>
-                  <span className="text-[15px] font-bold text-[var(--ink)]">
+                  <span className="flex shrink-0 flex-wrap items-baseline justify-end gap-x-2 text-[15px] font-bold text-[var(--ink)]">
+                    {lineSavings(item) > 0 && (
+                      <span className="text-[12.5px] font-normal text-[var(--ink-faint)] line-through">
+                        {money((item.regularPrice ?? 0) * item.qty)}
+                      </span>
+                    )}
                     {item.price != null ? money(item.price * item.qty) : "—"}
                   </span>
                 </div>
@@ -106,12 +114,21 @@ export default function CartPage({
           </button>
         </div>
 
-        <div className="sticky top-4 h-fit rounded-2xl border border-[var(--border)] bg-card p-5">
+        <div className="sticky top-4 h-fit min-w-0 rounded-2xl border border-[var(--border)] bg-card p-5">
           <h4 className="mb-4 text-[15px] font-bold text-[var(--ink)]">Order Summary</h4>
           <div className="flex items-center justify-between text-[13.5px] text-[var(--ink-dim)]">
             <span>Subtotal</span>
-            <span className="text-[var(--ink)]">{money(subtotal)}</span>
+            <span className="flex items-baseline gap-2 text-[var(--ink)]">
+              {savings > 0 && <span className="text-[12px] text-[var(--ink-faint)] line-through">{money(originalSubtotal)}</span>}
+              {money(subtotal)}
+            </span>
           </div>
+          {savings > 0 && (
+            <div className="mt-2 flex items-center justify-between text-[13.5px] font-semibold text-[var(--success-text)]">
+              <span>You save</span>
+              <span>{money(savings)}</span>
+            </div>
+          )}
           <div className="mt-2 flex items-center justify-between text-[13.5px] text-[var(--ink-dim)]">
             <span>Delivery</span>
             <span className="text-[var(--ink)]">Calculated at checkout</span>

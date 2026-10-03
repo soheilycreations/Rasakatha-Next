@@ -41,6 +41,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
     ...books.map((b) => ({
       url: absoluteUrl(bookHref(b)),
+      ...(b.publishedAt ? { lastModified: new Date(b.publishedAt) } : {}),
       changeFrequency: "weekly" as const,
       priority: b.inStock ? 0.6 : 0.3,
       ...(b.cover ? { images: [b.cover] } : {}),

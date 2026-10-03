@@ -3,7 +3,7 @@ import { randomInt } from "node:crypto";
 import { supabase } from "@/lib/server/supabase";
 import { rowToOrder, type OrderRow } from "@/lib/server/ordersDb";
 import { getByIds } from "@/lib/catalog";
-import { calculateShippingFee, SRI_LANKA_LOCATIONS } from "@/lib/shipping";
+import { calculateShippingFee, isKnownDistrict, isKnownTown } from "@/lib/shipping";
 import type { CartItem } from "@/lib/cart";
 import { decrementStock } from "@/lib/server/stock";
 import { notifyOrderPlaced } from "@/lib/server/notify";
@@ -15,7 +15,6 @@ const MAX_ID_ATTEMPTS = 5;
 const ID_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const newOrderId = () => "RK-" + Array.from({ length: 6 }, () => ID_ALPHABET[randomInt(ID_ALPHABET.length)]).join("");
 const DEFAULT_ITEM_WEIGHT = 303;
-const KNOWN_TOWNS = new Set(SRI_LANKA_LOCATIONS.flatMap((d) => d.towns));
 
 const str = (v: unknown, max = 300) => String(v ?? "").trim().slice(0, max);
 
@@ -34,6 +33,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "That payment method is not available. Please choose another." }, { status: 400 });
   }
 
+  // A delivery place is either a town from the Sri Lanka Post list, or (fallback) a district plus a
+  // town the customer typed. The fallback is priced as the standard zone and flagged for the store.
+  const district = str(c.district, 40);
+  const townNotInList = !!c.townNotInList;
+  const giftDistrict = str(c.giftDistrict, 40);
+  const giftTownNotInList = !!c.giftTownNotInList;
+
   const customer = {
     name: str(c.name, 120),
     phone: str(c.phone, 20),
@@ -41,23 +47,33 @@ export async function POST(request: Request) {
     city: str(c.city, 80),
     address: str(c.address, 500),
     isGift: !!c.isGift,
+    ...(district ? { district } : {}),
+    ...(townNotInList ? { townNotInList: true } : {}),
     ...(c.isGift
       ? {
           giftName: str(c.giftName, 120),
           giftPhone: str(c.giftPhone, 20),
           giftCity: str(c.giftCity, 80),
           giftAddress: str(c.giftAddress, 500),
+          ...(giftDistrict ? { giftDistrict } : {}),
+          ...(giftTownNotInList ? { giftTownNotInList: true } : {}),
         }
       : {}),
   };
   const deliveryCity = customer.isGift ? customer.giftCity ?? "" : customer.city;
+  const deliveryNotInList = customer.isGift ? giftTownNotInList : townNotInList;
+  const placeOk = (town: string, d: string, custom: boolean) =>
+    custom ? isKnownDistrict(d) && town.length >= 2 : isKnownTown(town);
   const phoneOk = (p: string) => p.replace(/\D/g, "").length >= 9;
 
   if (!customer.name || !phoneOk(customer.phone) || !/^\S+@\S+\.\S+$/.test(customer.email) || !customer.address) {
     return NextResponse.json({ error: "Please complete your contact and delivery details." }, { status: 400 });
   }
-  if (!KNOWN_TOWNS.has(customer.city) || !KNOWN_TOWNS.has(deliveryCity)) {
-    return NextResponse.json({ error: "Please choose a delivery city from the list." }, { status: 400 });
+  if (
+    !placeOk(customer.city, district, townNotInList) ||
+    (customer.isGift && !placeOk(deliveryCity, giftDistrict, giftTownNotInList))
+  ) {
+    return NextResponse.json({ error: "Please choose a delivery town from the list, or pick your district and type your town." }, { status: 400 });
   }
   if (customer.isGift && (!customer.giftName || !phoneOk(customer.giftPhone ?? "") || !customer.giftAddress)) {
     return NextResponse.json({ error: "Please complete the recipient's details." }, { status: 400 });
@@ -104,12 +120,13 @@ export async function POST(request: Request) {
     author: b.author,
     cover: b.cover,
     price: b.onSale && b.salePrice ? b.salePrice : b.regularPrice,
+    regularPrice: b.regularPrice,
     weight: b.weight || DEFAULT_ITEM_WEIGHT,
     qty: qtyById.get(b.id)!,
   }));
   const subtotal = items.reduce((s, x) => s + (x.price ?? 0) * x.qty, 0);
   const totalWeight = items.reduce((s, x) => s + (x.weight ?? DEFAULT_ITEM_WEIGHT) * x.qty, 0);
-  const deliveryFee = calculateShippingFee(deliveryCity, totalWeight);
+  const deliveryFee = calculateShippingFee(deliveryCity, totalWeight, { townNotInList: deliveryNotInList });
   const total = subtotal + deliveryFee;
 
   const paymentStatus = payment === "cod" ? "cod" : "pending";

@@ -1,101 +1,55 @@
-import { useRef } from "react";
 import type { CatalogBook } from "@/lib/catalog";
 import { money, tintForId, discountPercent } from "@/lib/format";
-import { triggerFlyToCart } from "@/lib/fly-to-cart";
 import Link from "next/link";
 import { bookHref } from "@/lib/links";
 import BookCover from "./BookCover";
 import StarRating from "./StarRating";
-import { IconHeart, IconCart } from "./icons";
+import { AddToCartButton, WishButton } from "./islands";
 
-export default function CatalogCard({
-  book,
-  wished,
-  onToggleWish,
-  onAdd,
-  onOpen,
-  priority = false,
-}: {
-  book: CatalogBook;
-  priority?: boolean;
-  wished: boolean;
-  onToggleWish: (id: string) => void;
-  onAdd: (book: CatalogBook) => void;
-  onOpen: (book: CatalogBook) => void;
-}) {
-  const coverRef = useRef<HTMLDivElement>(null);
-
-  const handleAdd = () => {
-    const rect = coverRef.current?.getBoundingClientRect();
-    if (rect) triggerFlyToCart({ rect, imgSrc: book.cover, tint: tintForId(book.id) });
-    onAdd(book);
-  };
-
+// Server component: only the wishlist and add-to-cart buttons are client islands.
+export default function CatalogCard({ book, priority = false }: { book: CatalogBook; priority?: boolean }) {
+  const href = bookHref(book);
   return (
-    <div
-      onClick={() => onOpen(book)}
-      className="group relative flex cursor-pointer flex-col rounded-[18px] border border-[var(--border)] bg-card p-3 pb-4 transition-all duration-[480ms] ease-[var(--ease-premium)] hover:z-10 hover:-translate-y-1.5 hover:shadow-[0_22px_40px_-18px_rgba(0,0,0,0.35)]"
-    >
-      <div
-        ref={coverRef}
-        className="relative transition-transform duration-[480ms] ease-[var(--ease-premium)] group-hover:scale-[1.06]"
-      >
-        <BookCover
-          cover={book.cover || undefined}
-          tint={tintForId(book.id)}
-          alt={book.title}
-          caption="book cover"
-          className="aspect-[2/3] rounded-xl"
-          imgClassName="rounded-xl"
-          priority={priority}
-        >
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleWish(book.id);
-            }}
-            className="absolute right-2 top-2 grid h-[30px] w-[30px] place-items-center rounded-full bg-black/45 backdrop-blur-sm"
-            style={{ color: wished ? "#EF4238" : "rgba(255,255,255,0.8)" }}
-            aria-label="Toggle wishlist"
-          >
-            <IconHeart className="h-[15px] w-[15px]" style={{ fill: wished ? "currentColor" : "none" }} />
-          </button>
-          {!book.inStock && (
-            <span className="absolute left-2 top-2 rounded-full bg-black/60 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-white/70">
-              Out of stock
-            </span>
-          )}
-          {book.inStock && book.onSale && book.salePrice && (
-            <span className="absolute left-2 top-2 rounded-md bg-accent px-1.5 py-0.5 text-[10px] font-extrabold text-white">
-              -{discountPercent(book.regularPrice, book.salePrice)}%
-            </span>
-          )}
-          {book.inStock && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleAdd();
-              }}
-              aria-label="Add to cart"
-              className="absolute bottom-2 right-2 grid h-10 w-10 translate-y-2 place-items-center rounded-full bg-accent text-white opacity-0 shadow-[0_10px_22px_-6px_rgba(239,66,56,0.9)] transition-all duration-200 hover:scale-110 active:scale-95 group-hover:translate-y-0 group-hover:opacity-100 max-md:translate-y-0 max-md:opacity-100"
-            >
-              <IconCart className="h-[18px] w-[18px]" />
-            </button>
-          )}
-        </BookCover>
+    <div className="group relative flex flex-col rounded-[18px] border border-[var(--border)] bg-card p-3 pb-4 transition-[transform,box-shadow] duration-[480ms] ease-[var(--ease-premium)] motion-reduce:transition-none hover:z-10 hover:-translate-y-1.5 hover:shadow-[0_22px_40px_-18px_rgba(0,0,0,0.35)]">
+      <div data-cover className="relative z-10 transition-transform duration-[480ms] ease-[var(--ease-premium)] group-hover:scale-[1.06]">
+        <Link href={href} tabIndex={-1} aria-hidden="true" className="block">
+          <BookCover
+            cover={book.cover || undefined}
+            tint={tintForId(book.id)}
+            alt=""
+            caption="book cover"
+            className="aspect-[2/3] rounded-xl"
+            imgClassName="rounded-xl"
+            priority={priority}
+            sizes="(max-width: 640px) 90vw, 220px"
+          />
+        </Link>
+        <WishButton
+          id={book.id}
+          unwishedColor="rgba(255,255,255,0.8)"
+          className="absolute right-2 top-2 grid h-[30px] w-[30px] place-items-center rounded-full bg-black/45 backdrop-blur-sm"
+        />
+        {!book.inStock && (
+          <span className="pointer-events-none absolute left-2 top-2 rounded-full bg-black/60 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-white/70">
+            Out of stock
+          </span>
+        )}
+        {book.inStock && book.onSale && book.salePrice && (
+          <span className="pointer-events-none absolute left-2 top-2 rounded-md bg-accent px-1.5 py-0.5 text-[10px] font-extrabold text-white">
+            -{discountPercent(book.regularPrice, book.salePrice)}%
+          </span>
+        )}
+        {book.inStock && (
+          <AddToCartButton
+            book={book}
+            className="absolute bottom-2 right-2 grid h-10 w-10 translate-y-2 place-items-center rounded-full bg-accent text-white opacity-0 shadow-[0_10px_22px_-6px_rgba(239,66,56,0.9)] transition-all duration-200 hover:scale-110 active:scale-95 group-hover:translate-y-0 group-hover:opacity-100 focus-visible:translate-y-0 focus-visible:opacity-100 max-md:translate-y-0 max-md:opacity-100 [@media(hover:none)]:translate-y-0 [@media(hover:none)]:opacity-100"
+          />
+        )}
       </div>
-      <div className="my-[13px] inline-block rounded-full bg-[var(--surface-tint-strong)] px-[9px] py-1 font-mono text-[9.5px] tracking-[0.12em] text-[var(--ink-dim)]">
+      <div className="my-[13px] inline-block self-start rounded-full bg-[var(--surface-tint-strong)] px-[9px] py-1 font-mono text-[9.5px] tracking-[0.12em] text-[var(--ink-dim)]">
         {book.category.toUpperCase()}
       </div>
-      <Link
-        href={bookHref(book)}
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          onOpen(book);
-        }}
-        className="block text-sm font-semibold leading-[1.35] text-[var(--ink)] hover:text-accent"
-      >
+      <Link href={href} className="block text-sm font-semibold leading-[1.35] text-[var(--ink)] hover:text-accent after:absolute after:inset-0 after:z-0 after:content-['']">
         {book.title}
       </Link>
       <div className="mt-1 text-xs text-[var(--ink-faint)]">{book.author}</div>

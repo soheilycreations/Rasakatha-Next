@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { slugify } from "./links";
 import type { BookLanguage } from "./bookMeta";
 import { normalizeText, phoneticKey, tokens } from "./searchText";
+import { newestFirst, recommendedOrder, tier } from "./bookOrder";
 
 export type CatalogBook = {
   id: string;
@@ -27,6 +28,9 @@ export type CatalogBook = {
   publishedYear: number | null;
   binding: string | null;
   translator: string | null;
+  // real publish date (ISO) and whether it is a Rasakatha title (see supabase/book-order.sql)
+  publishedAt: string | null;
+  isOwnTitle: boolean;
 };
 
 export type { BookLanguage };
@@ -52,10 +56,12 @@ type BookRow = {
   published_year?: number | null;
   binding?: string | null;
   translator?: string | null;
+  published_at?: string | null;
+  is_own_title?: boolean | null;
 };
 
 // Columns added by later migrations. If a migration hasn't been run yet, writes retry without them.
-export const OPTIONAL_COLUMNS = ["stock_qty", "isbn", "pages", "language", "published_year", "binding", "translator"] as const;
+export const OPTIONAL_COLUMNS = ["stock_qty", "isbn", "pages", "language", "published_year", "binding", "translator", "published_at", "is_own_title"] as const;
 export function withoutOptionalColumns<T extends Record<string, unknown>>(row: T): Omit<T, (typeof OPTIONAL_COLUMNS)[number]> {
   const copy: Record<string, unknown> = { ...row };
   for (const c of OPTIONAL_COLUMNS) delete copy[c];
@@ -84,6 +90,8 @@ export function rowToBook(r: BookRow): CatalogBook {
     publishedYear: r.published_year ?? null,
     binding: r.binding ?? null,
     translator: r.translator ?? null,
+    publishedAt: r.published_at ?? null,
+    isOwnTitle: !!r.is_own_title,
   };
 }
 
@@ -114,6 +122,9 @@ export function bookToRow(b: CatalogBook): BookRow {
     published_year: b.publishedYear,
     binding: b.binding,
     translator: b.translator,
+    is_own_title: b.isOwnTitle,
+    // published_at is NOT NULL in the database, so only send it when we have one
+    ...(b.publishedAt ? { published_at: b.publishedAt } : {}),
   };
 }
 
@@ -187,9 +198,7 @@ export async function getCategories(): Promise<{ name: string; count: number; co
 // Customers shouldn't have to page past sold-out titles to find something
 // they can buy: in-stock books first, newest first within each group.
 export function inStockFirst(items: CatalogBook[]): CatalogBook[] {
-  return [...items].sort(
-    (a, b) => Number(b.inStock) - Number(a.inStock) || Number(b.id) - Number(a.id)
-  );
+  return recommendedOrder(items);
 }
 
 const NON_AUTHOR_NAMES = new Set(["Rasakatha Publishers", "Various Authors", "Other"]);
@@ -227,10 +236,7 @@ export async function searchCatalog(query: string): Promise<CatalogBook[]> {
     scored.push({ book: it.book, score });
   }
   return scored
-    .sort(
-      (a, b) =>
-        b.score - a.score || Number(b.book.inStock) - Number(a.book.inStock) || Number(b.book.id) - Number(a.book.id)
-    )
+    .sort((a, b) => tier(a.book) - tier(b.book) || b.score - a.score || newestFirst(a.book, b.book))
     .map((x) => x.book);
 }
 
@@ -314,8 +320,14 @@ export async function getByAuthor(name: string): Promise<CatalogBook[]> {
 export async function getNewest(limit: number): Promise<CatalogBook[]> {
   return [...(await getCatalog())]
     .filter((b) => b.inStock)
-    .sort((a, b) => Number(b.id) - Number(a.id))
+    .sort(newestFirst)
     .slice(0, limit);
+}
+
+// In-stock Rasakatha titles, newest first.
+export async function getOwnTitles(limit?: number): Promise<CatalogBook[]> {
+  const items = (await getCatalog()).filter((b) => b.isOwnTitle && b.inStock).sort(newestFirst);
+  return limit ? items.slice(0, limit) : items;
 }
 
 export async function getOnSale(limit?: number): Promise<CatalogBook[]> {
@@ -333,7 +345,8 @@ export function applyListOptions(items: CatalogBook[], order: string | null, inS
   let out = inStockOnly ? items.filter((b) => b.inStock) : items;
   if (order === "price_asc") out = [...out].sort((a, b) => effectivePrice(a) - effectivePrice(b));
   else if (order === "price_desc") out = [...out].sort((a, b) => effectivePrice(b) - effectivePrice(a));
-  else if (order === "newest") out = [...out].sort((a, b) => Number(b.id) - Number(a.id));
+  else if (order === "newest") out = [...out].sort(newestFirst);
+  else out = recommendedOrder(out);
   return out;
 }
 
