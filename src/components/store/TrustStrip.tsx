@@ -8,7 +8,7 @@ import { IconTruck, IconBook, IconCart, IconHeart } from "./icons";
 const ITEMS = [
   { Icon: IconTruck, title: "Island-wide delivery", text: "Delivered to your doorstep", href: ROUTES.delivery },
   { Icon: IconCart, title: "Cash on Delivery", text: "Pay when your books arrive", href: ROUTES.delivery },
-  { Icon: IconBook, title: "Straight from the publisher", text: "Genuine Rasakatha editions", href: ROUTES.about },
+  { Icon: IconBook, title: "Straight from the publisher", text: "Genuine Rasakatha editions", href: ROUTES.rasakatha },
   { Icon: IconHeart, title: "Help on WhatsApp", text: SITE.phone, href: `https://wa.me/${SITE.whatsapp}` },
 ];
 

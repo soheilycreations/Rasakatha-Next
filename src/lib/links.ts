@@ -48,6 +48,7 @@ export const ROUTES = {
   delivery: "/delivery-returns",
   help: "/help",
   search: "/search",
+  rasakatha: "/rasakatha-publishers",
   privacy: "/privacy-policy",
   terms: "/terms",
   refund: "/refund-policy",

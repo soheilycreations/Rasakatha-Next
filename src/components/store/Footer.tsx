@@ -10,6 +10,7 @@ const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
     title: "Shop",
     links: [
       { label: "New Arrivals", href: ROUTES.newArrivals },
+      { label: "Rasakatha Books", href: ROUTES.rasakatha },
       { label: "All Categories", href: ROUTES.categories },
       { label: "Sale & Offers", href: ROUTES.sale },
     ],

@@ -7,18 +7,20 @@ import BookCover from "./BookCover";
 import ThemeToggle from "./ThemeToggle";
 import { tintForId } from "@/lib/format";
 import { NAV_ITEMS } from "@/lib/store-data";
-import { IconHome, IconCategories, IconLibrary } from "./icons";
+import { IconHome, IconBook, IconCategories, IconLibrary } from "./icons";
 import logoLight from "@/assets/rasakatha-logo-light-mode.png";
 import logoDark from "@/assets/rasakatha-logo-dark-mode.png";
 
 const NAV_HREFS = {
   Home: "/",
+  "Rasakatha Books": "/rasakatha-publishers",
   Categories: "/categories",
   "My Library": "/library",
 };
 
 const NAV_ICONS = {
   Home: IconHome,
+  "Rasakatha Books": IconBook,
   Categories: IconCategories,
   "My Library": IconLibrary,
 };

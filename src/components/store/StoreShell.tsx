@@ -27,12 +27,14 @@ const CART_STORAGE_KEY = "rasakatha:cart";
 
 const NAV_ROUTES: Record<string, string> = {
   Home: ROUTES.home,
+  "Rasakatha Books": ROUTES.rasakatha,
   Categories: ROUTES.categories,
   "My Library": ROUTES.library,
 };
 
 function navForPath(pathname: string): string {
   if (pathname === "/") return "Home";
+  if (pathname.startsWith("/rasakatha-publishers")) return "Rasakatha Books";
   if (pathname.startsWith("/categor")) return "Categories";
   if (pathname.startsWith("/library")) return "My Library";
   return "";

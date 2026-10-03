@@ -3,6 +3,7 @@ import {
   getByAuthor,
   getByCategory,
   getByIds,
+  getAllOwnTitles,
   getByPublisher,
   getNewest,
   getOnSale,
@@ -22,6 +23,7 @@ export async function GET(request: Request) {
   const publisher = searchParams.get("publisher");
   const author = searchParams.get("author");
   const search = searchParams.get("search");
+  const own = searchParams.get("own");
   const ids = searchParams.get("ids");
   const sort = searchParams.get("sort");
   const page = Number(searchParams.get("page") || "1");
@@ -39,6 +41,7 @@ export async function GET(request: Request) {
 
   let items: Awaited<ReturnType<typeof getCatalog>>;
   if (search) items = await searchCatalog(search);
+  else if (own === "1") items = await getAllOwnTitles();
   else if (author) items = await getByAuthor(author);
   else if (publisher) items = await getByPublisher(publisher);
   else if (category === "__sale__") items = await getOnSale();

@@ -7,7 +7,13 @@ import AboutBanner from "./AboutBanner";
 import TrustStrip from "./TrustStrip";
 import Footer from "./Footer";
 
-export type HomeRowData = { title: string; items: CatalogBook[]; viewAllHref?: string };
+export type HomeRowData = {
+  title: string;
+  items: CatalogBook[];
+  viewAllHref?: string;
+  viewAllLabel?: string;
+  endTile?: { href: string; label: string };
+};
 
 // Server component: everything is rendered as HTML; only small islands (wishlist/cart
 // buttons, row arrows, the hero carousel) ship client code.
@@ -34,7 +40,7 @@ export default function HomeView({
       <TrustStrip />
 
       {rowsBeforeGenres.map((row) => (
-        <HomeRow key={row.title} title={row.title} items={row.items} viewAllHref={row.viewAllHref} />
+        <HomeRow key={row.title} title={row.title} items={row.items} viewAllHref={row.viewAllHref} viewAllLabel={row.viewAllLabel} endTile={row.endTile} />
       ))}
 
       <CategoryTiles categories={categories} />

@@ -2,7 +2,7 @@ import { test, expect, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
 // Automated WCAG 2 A/AA checks (includes colour contrast) on the main pages, in both themes.
-const PAGES = ["/", "/categories", "/category/novel", "/book/723-eka-langata-dheka-newei", "/cart", "/checkout", "/track-order", "/about", "/contact"];
+const PAGES = ["/", "/rasakatha-publishers", "/categories", "/category/novel", "/book/723-eka-langata-dheka-newei", "/cart", "/checkout", "/track-order", "/about", "/contact"];
 
 async function setTheme(page: Page, theme: "dark" | "light") {
   await page.addInitScript((t) => localStorage.setItem("rasakatha:theme", t), theme);

@@ -137,3 +137,43 @@ test("Rasakatha titles lead the Novel and Translations lists", async ({ request 
     expect(items.every((b) => b.inStock)).toBe(true);
   }
 });
+
+test("/rasakatha-publishers lists every Rasakatha title; home row, nav and book page link to it", async ({ page, request }) => {
+  type B = { id: string; isOwnTitle: boolean };
+  const first = await (await request.get("/api/books?own=1&limit=60&page=1")).json();
+  const total = first.total as number;
+  expect(total).toBeGreaterThan(60); // the whole catalogue of own titles, not just a row of 10
+  const ownIds = new Set<string>();
+  for (let p = 1; p <= first.pageCount; p++) {
+    const d = await (await request.get(`/api/books?own=1&limit=60&page=${p}`)).json();
+    (d.items as B[]).forEach((b) => ownIds.add(b.id));
+  }
+  expect(ownIds.size).toBe(total);
+
+  await page.goto("/rasakatha-publishers");
+  await expect(page.getByText(`${total} books`, { exact: true })).toBeVisible();
+  const hrefs = await page.locator('main a[href^="/book/"], a[href^="/book/"]').evaluateAll((els) => [...new Set(els.map((e) => (e as HTMLAnchorElement).getAttribute("href")!))]);
+  const ids = hrefs.map((h) => h.replace("/book/", "").match(/^\d+/)![0]);
+  expect(ids.length).toBeGreaterThanOrEqual(24);
+  expect(ids.every((id) => ownIds.has(id)) || ids.filter((id) => !ownIds.has(id)).length <= 16 /* trending sidebar links */).toBe(true);
+  expect(await page.title()).toContain("Rasakatha Publishers");
+  expect(await page.locator('link[rel="canonical"]').getAttribute("href")).toContain("/rasakatha-publishers");
+
+  // home: "View all (N)" link and the end tile
+  await page.goto("/");
+  await expect(page.getByRole("link", { name: `View all (${total})` })).toHaveAttribute("href", "/rasakatha-publishers");
+  await expect(page.getByRole("link", { name: /See all Rasakatha books/ })).toBeVisible();
+
+  // sidebar navigation (desktop)
+  await expect(page.getByRole("link", { name: "Rasakatha Books" }).first()).toBeVisible();
+
+  // book page badge for a Rasakatha title
+  const ownId = [...ownIds][0];
+  await page.goto(`/book/${ownId}`).catch(() => {});
+  await page.waitForLoadState("load");
+  await expect(page.locator('a[href="/rasakatha-publishers"]', { hasText: "Rasakatha Publishers" }).first()).toBeVisible();
+});
+
+test("sitemap lists the Rasakatha page", async ({ request }) => {
+  expect(await (await request.get("/sitemap.xml")).text()).toContain("/rasakatha-publishers");
+});

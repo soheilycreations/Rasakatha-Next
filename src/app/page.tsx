@@ -20,6 +20,7 @@ const ROW = 10;
 export default async function Home() {
   const [slides, catalog, categories] = await Promise.all([getHeroSlides(), getCatalog(), getCategories()]);
   const byId = new Map(catalog.map((b) => [b.id, b]));
+  const ownCount = catalog.filter((b) => b.isOwnTitle).length; // live count for "View all (N)"
   const heroBooks: Record<string, CatalogBook> = {};
   for (const s of slides) {
     const b = byId.get(s.id);
@@ -38,7 +39,13 @@ export default async function Home() {
 
   const rowsBeforeGenres: HomeRowData[] = [
     { title: "New Arrivals", items: forCards(newest), viewAllHref: ROUTES.newArrivals },
-    { title: "From Rasakatha Publishers", items: inStock(fromRasakatha) },
+    {
+      title: "From Rasakatha Publishers",
+      items: inStock(fromRasakatha),
+      viewAllHref: ROUTES.rasakatha,
+      viewAllLabel: `View all (${ownCount})`,
+      endTile: { href: ROUTES.rasakatha, label: "See all Rasakatha books" },
+    },
   ];
   const rowsAfterAbout: HomeRowData[] = [
     { title: "Books on Sale", items: forCards(sale), viewAllHref: ROUTES.sale },

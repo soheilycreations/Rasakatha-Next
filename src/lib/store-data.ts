@@ -53,4 +53,4 @@ export const SALE: SaleBook[] = [
   { id: "2295", title: "Nihada Sakshi", author: "Chandrasiri Niriella", format: "OTHER", off: "-10%", was: "Rs. 1,000", now: "Rs. 900", tint: "#3d2a52", cover: "/covers/book-2295.jpg" },
 ];
 
-export const NAV_ITEMS = ["Home", "Categories", "My Library"] as const;
+export const NAV_ITEMS = ["Home", "Rasakatha Books", "Categories", "My Library"] as const;

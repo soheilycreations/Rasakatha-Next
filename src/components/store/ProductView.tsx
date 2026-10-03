@@ -10,7 +10,7 @@ import ClampedText from "./ClampedText";
 import ProductReviews from "./ProductReviews";
 import Footer from "./Footer";
 import BookBuyArea, { BackButton, ViewItemTracker } from "./BookBuyArea";
-import { IconTruck } from "./icons";
+import { IconBook, IconTruck } from "./icons";
 
 export default function ProductView({
   book,
@@ -26,7 +26,20 @@ export default function ProductView({
 
   const details: [string, React.ReactNode][] = [
     ["Author", <Link key="a" href={authorHref(book.author)} className="text-accent-blue hover:opacity-75">{book.author}</Link>],
-    ...(book.publisher ? ([["Publisher", book.publisher]] as [string, React.ReactNode][]) : []),
+    ...(book.publisher
+      ? ([
+          [
+            "Publisher",
+            book.isOwnTitle ? (
+              <Link key="p" href={ROUTES.rasakatha} className="text-accent-blue hover:opacity-75">
+                {book.publisher}
+              </Link>
+            ) : (
+              book.publisher
+            ),
+          ],
+        ] as [string, React.ReactNode][])
+      : []),
     ["Category", <Link key="c" href={categoryHref(book.category)} className="text-accent-blue hover:opacity-75">{book.category}</Link>],
     ...(book.translator ? ([["Translator", book.translator]] as [string, React.ReactNode][]) : []),
     ...(book.language ? ([["Language", LANGUAGE_LABELS[book.language]]] as [string, React.ReactNode][]) : []),
@@ -73,6 +86,15 @@ export default function ProductView({
           </div>
 
           <div className="min-w-0">
+            {book.isOwnTitle && (
+              <Link
+                href={ROUTES.rasakatha}
+                className="mb-2 mr-2 inline-flex items-center gap-1.5 rounded-full bg-accent/[0.12] px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-[0.1em] text-accent hover:bg-accent/[0.2]"
+              >
+                <IconBook className="h-3 w-3" />
+                Rasakatha Publishers
+              </Link>
+            )}
             <Link
               href={categoryHref(book.category)}
               className="mb-2 inline-block rounded-full bg-[var(--surface-tint-strong)] px-2.5 py-1 font-mono text-[10px] tracking-[0.12em] text-[var(--ink-dim)] hover:text-accent"

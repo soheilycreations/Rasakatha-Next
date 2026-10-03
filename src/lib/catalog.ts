@@ -140,6 +140,7 @@ export function invalidateCatalog() {
   // Also refresh the statically cached store pages (home, book, category…).
   try {
     revalidatePath("/", "layout");
+    revalidatePath("/rasakatha-publishers");
   } catch {
     // called outside a request (e.g. a script) — nothing cached to refresh
   }
@@ -322,6 +323,11 @@ export async function getNewest(limit: number): Promise<CatalogBook[]> {
     .filter((b) => b.inStock)
     .sort(newestFirst)
     .slice(0, limit);
+}
+
+// Every Rasakatha title (in stock first, then newest first): the /rasakatha-publishers page.
+export async function getAllOwnTitles(): Promise<CatalogBook[]> {
+  return recommendedOrder((await getCatalog()).filter((b) => b.isOwnTitle));
 }
 
 // In-stock Rasakatha titles, newest first.
