@@ -1,69 +1,50 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
 import type { HeroSlide } from "@/lib/hero-slides";
 import type { CatalogBook } from "@/lib/catalog";
 import { triggerFlyToCart } from "@/lib/fly-to-cart";
+import { circularOffset, HERO_ROOT_STYLE, slideStyle } from "@/lib/hero-style";
 import { IconCart, IconHeart } from "./icons";
+import { useStore } from "./StoreContext";
 
-const GAP = 26;
 const INTERVAL = 4200;
-const ASPECT = 1695 / 1020;
 const SWIPE_THRESHOLD = 50;
 const DRAG_THRESHOLD = 8;
 
-function circularOffset(i: number, active: number, n: number) {
-  let o = i - active;
-  const half = n / 2;
-  if (o > half) o -= n;
-  else if (o < -half) o += n;
-  return o;
-}
-
+// Interactive layer for the server-rendered hero (see HeroSection). `children` are the slides.
 export default function HeroCarousel({
   slides,
   heroBooks,
-  wish,
-  onToggleWish,
-  onBuy,
-  onOpen,
+  children,
 }: {
   slides: HeroSlide[];
   // Slides whose id matches a catalog book sell that book at its real price.
   heroBooks: Record<string, CatalogBook>;
-  wish: Record<string, boolean>;
-  onToggleWish: (key: string) => void;
-  onBuy: (book: CatalogBook) => void;
-  onOpen: (book: CatalogBook) => void;
+  children: React.ReactNode;
 }) {
+  const { wish, toggleWish, addBookToCart, openBook } = useStore();
   const [active, setActive] = useState(0);
-  const [slideW, setSlideW] = useState(640);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
   const dragState = useRef<{ startX: number } | null>(null);
   const justDragged = useRef(false);
 
   const n = slides.length;
   const goTo = (i: number) => setActive(((i % n) + n) % n);
-  const goNext = () => goTo(active + 1);
-  const goPrev = () => goTo(active - 1);
+
+  // Move the (server-rendered) slides to their new positions.
+  useEffect(() => {
+    rootRef.current?.querySelectorAll<HTMLElement>("[data-slide]").forEach((el) => {
+      const i = Number(el.dataset.slide);
+      Object.assign(el.style, slideStyle(circularOffset(i, active, n)));
+    });
+  }, [active, n]);
 
   useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const measure = () => setSlideW(Math.min(640, Math.max(220, el.clientWidth * 0.72)));
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-
-  useEffect(() => {
+    if (n < 2) return;
     const id = setTimeout(() => setActive((a) => (a + 1) % n), INTERVAL);
     return () => clearTimeout(id);
   }, [active, n]);
-
-  const slideH = slideW / ASPECT;
 
   const startDrag = (clientX: number) => {
     dragState.current = { startX: clientX };
@@ -75,87 +56,52 @@ export default function HeroCarousel({
     const delta = clientX - st.startX;
     if (Math.abs(delta) >= DRAG_THRESHOLD) {
       justDragged.current = true;
-      if (delta <= -SWIPE_THRESHOLD) goPrev();
-      else if (delta >= SWIPE_THRESHOLD) goNext();
+      if (delta <= -SWIPE_THRESHOLD) goTo(active - 1);
+      else if (delta >= SWIPE_THRESHOLD) goTo(active + 1);
     }
   };
-  const handleSlideClick = (i: number, isActive: boolean) => {
+  const onSlideClick = (e: React.MouseEvent) => {
+    const el = (e.target as HTMLElement).closest<HTMLElement>("[data-slide]");
+    if (!el) return;
     if (justDragged.current) {
       justDragged.current = false;
       return;
     }
-    if (!isActive) goTo(i);
-    else if (heroBooks[slides[i].id]) onOpen(heroBooks[slides[i].id]);
+    const i = Number(el.dataset.slide);
+    if (i !== active) goTo(i);
+    else if (heroBooks[slides[i].id]) openBook(heroBooks[slides[i].id]);
   };
   const activeBook = n > 0 ? heroBooks[slides[active].id] : undefined;
 
   return (
     <div
-      ref={containerRef}
+      ref={rootRef}
       onMouseDown={(e) => startDrag(e.clientX)}
       onMouseUp={(e) => endDrag(e.clientX)}
       onTouchStart={(e) => startDrag(e.touches[0].clientX)}
       onTouchEnd={(e) => endDrag(e.changedTouches[0].clientX)}
-      className="relative mx-4 mb-8 touch-pan-y select-none overflow-hidden rounded-[10px] sm:mx-8"
-      style={{ height: slideH, perspective: 1600 }}
+      onClick={onSlideClick}
+      className="relative mx-4 mb-8 touch-pan-y select-none overflow-hidden rounded-[10px] sm:mx-8 [container-type:inline-size]"
+      style={HERO_ROOT_STYLE}
     >
-      {slides.map((s, i) => {
-        const offset = circularOffset(i, active, n);
-        const isActive = offset === 0;
-        const hidden = Math.abs(offset) > 1;
-        const dir = offset === 0 ? 0 : offset > 0 ? 1 : -1;
+      {/* sizing box: gives the container its height (slides are absolutely positioned) */}
+      <div className="mx-auto" style={{ width: "var(--hero-w)", aspectRatio: "1695 / 1020" }} />
 
-        return (
-          <div
-            key={s.id}
-            onClick={() => handleSlideClick(i, isActive)}
-            className="absolute left-1/2 top-0 cursor-pointer overflow-hidden rounded-[22px]"
-            style={{
-              width: slideW,
-              height: slideH,
-              marginLeft: -slideW / 2,
-              zIndex: isActive ? 10 : 5 - Math.abs(offset),
-              transformStyle: "preserve-3d",
-              transform: isActive
-                ? "translateX(0px) scale(1) rotateY(0deg) translateZ(0px)"
-                : `translateX(${offset * (slideW * 0.55 + GAP)}px) scale(0.86) rotateY(${dir * -22}deg) translateZ(-140px)`,
-              opacity: hidden ? 0 : isActive ? 1 : 0.55,
-              filter: isActive ? "none" : "brightness(0.55)",
-              pointerEvents: hidden ? "none" : "auto",
-              boxShadow: isActive
-                ? "0 40px 80px -24px rgba(0,0,0,0.9)"
-                : "0 20px 50px -20px rgba(0,0,0,0.8)",
-              transition:
-                "transform 650ms cubic-bezier(0.22,0.61,0.36,1), opacity 650ms ease, filter 650ms ease, box-shadow 650ms ease",
-            }}
-          >
-            <Image
-              src={s.cover}
-              alt={s.title}
-              fill
-              sizes="(max-width: 768px) 90vw, 640px"
-              className="pointer-events-none rounded-[22px] object-cover"
-              style={{ clipPath: "inset(0 round 22px)" }}
-              priority={i === 0}
-              draggable={false}
-            />
-          </div>
-        );
-      })}
+      {children}
 
       {/* Buttons live outside the preserve-3d/perspective scene so peeking side
           slides can never intercept their clicks (3D depth sorting can beat z-index). */}
       <div
         className="pointer-events-none absolute left-1/2 top-0 z-30 overflow-visible"
-        style={{ width: slideW, height: slideH, marginLeft: -slideW / 2 }}
+        style={{ width: "var(--hero-w)", aspectRatio: "1695 / 1020", marginLeft: "calc(var(--hero-w) / -2)" }}
       >
         <button
           onClick={(e) => {
             e.stopPropagation();
-            onToggleWish(slides[active].id);
+            toggleWish(slides[active].id);
           }}
           className="pointer-events-auto absolute right-4 top-4 grid h-10 w-10 place-items-center rounded-full bg-black/40 backdrop-blur-sm transition-colors hover:bg-black/60 sm:right-6 sm:top-6 sm:h-[46px] sm:w-[46px]"
-          style={{ color: wish[slides[active].id] ? "#EF4238" : "rgba(255,255,255,0.85)" }}
+          style={{ color: wish[slides[active].id] ? "var(--accent)" : "rgba(255,255,255,0.85)" }}
           aria-label="Toggle wishlist"
         >
           <IconHeart
@@ -165,21 +111,21 @@ export default function HeroCarousel({
         </button>
 
         {activeBook && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            if (!activeBook.inStock) {
-              onOpen(activeBook);
-              return;
-            }
-            triggerFlyToCart({ rect: e.currentTarget.getBoundingClientRect(), imgSrc: activeBook.cover });
-            onBuy(activeBook);
-          }}
-          className="pointer-events-auto absolute bottom-5 right-4 flex items-center gap-2 rounded-full bg-accent px-4 py-2.5 text-[13px] font-bold text-white shadow-[0_10px_24px_-8px_rgba(239,66,56,0.7)] transition-transform hover:scale-105 active:scale-95 sm:bottom-6 sm:right-6 sm:px-5 sm:py-3 sm:text-sm max-sm:bottom-auto max-sm:left-4 max-sm:right-auto max-sm:top-4 max-sm:px-3"
-        >
-          <IconCart className="h-4 w-4" />
-          <span className="max-sm:sr-only">{activeBook.inStock ? "Add to Cart" : "View Book"}</span>
-        </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!activeBook.inStock) {
+                openBook(activeBook);
+                return;
+              }
+              triggerFlyToCart({ rect: e.currentTarget.getBoundingClientRect(), imgSrc: activeBook.cover });
+              addBookToCart(activeBook);
+            }}
+            className="pointer-events-auto absolute bottom-5 right-4 flex items-center gap-2 rounded-full bg-accent px-4 py-2.5 text-[13px] font-bold text-white shadow-[0_10px_24px_-8px_rgba(239,66,56,0.7)] transition-transform hover:scale-105 active:scale-95 sm:bottom-6 sm:right-6 sm:px-5 sm:py-3 sm:text-sm max-sm:bottom-auto max-sm:left-4 max-sm:right-auto max-sm:top-4 max-sm:px-3"
+          >
+            <IconCart className="h-4 w-4" />
+            <span className="max-sm:sr-only">{activeBook.inStock ? "Add to Cart" : "View Book"}</span>
+          </button>
         )}
       </div>
 
@@ -190,7 +136,10 @@ export default function HeroCarousel({
         {slides.map((s, i) => (
           <button
             key={s.id}
-            onClick={() => goTo(i)}
+            onClick={(e) => {
+              e.stopPropagation();
+              goTo(i);
+            }}
             aria-label={`Show ${s.title}`}
             className="relative h-[5px] w-8 overflow-hidden rounded-full bg-white/30 p-0"
           >

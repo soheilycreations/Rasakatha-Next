@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { og } from "@/lib/site";
 import { notFound } from "next/navigation";
 import CatalogListing from "@/components/store/CatalogListing";
+import CatalogGrid from "@/components/store/CatalogGrid";
 import AuthorAvatar from "@/components/store/AuthorAvatar";
 import { forCards, getByAuthor, paginate } from "@/lib/catalog";
 import { authorHref } from "@/lib/links";
@@ -40,6 +41,7 @@ export default async function AuthorPage({ params }: Props) {
       title={`Books by ${name}`}
       query={`author=${encodeURIComponent(name)}`}
       initialItems={forCards(first.items)}
+      initialGrid={<CatalogGrid items={forCards(first.items)} emptyMessage="No books here yet." />}
       initialPageCount={first.pageCount}
       initialTotal={first.total}
       header={

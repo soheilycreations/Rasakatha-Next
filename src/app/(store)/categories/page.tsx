@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { og } from "@/lib/site";
 import CatalogListing from "@/components/store/CatalogListing";
+import CatalogGrid from "@/components/store/CatalogGrid";
 import { forCards, getCatalog, getCategories, inStockFirst, paginate } from "@/lib/catalog";
 
 export const revalidate = 300;
@@ -22,6 +23,7 @@ export default async function CategoriesPage() {
       intro="Pick a category to narrow things down, or sort and filter the full collection."
       query=""
       initialItems={forCards(first.items)}
+      initialGrid={<CatalogGrid items={forCards(first.items)} emptyMessage="No books here yet." />}
       initialPageCount={first.pageCount}
       initialTotal={first.total}
       chips={categories.map((c) => ({ name: c.name, count: c.count }))}

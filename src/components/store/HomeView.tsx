@@ -1,17 +1,16 @@
-"use client";
-
 import type { CatalogBook } from "@/lib/catalog";
 import type { HeroSlide } from "@/lib/hero-slides";
-import HeroCarousel from "./HeroCarousel";
+import HeroSection from "./HeroSection";
 import CategoryTiles from "./CategoryTiles";
 import HomeRow from "./HomeRow";
 import AboutBanner from "./AboutBanner";
 import TrustStrip from "./TrustStrip";
 import Footer from "./Footer";
-import { useCardHandlers, useStore } from "./StoreContext";
 
 export type HomeRowData = { title: string; items: CatalogBook[]; viewAllHref?: string };
 
+// Server component: everything is rendered as HTML; only small islands (wishlist/cart
+// buttons, row arrows, the hero carousel) ship client code.
 export default function HomeView({
   slides,
   heroBooks,
@@ -25,29 +24,17 @@ export default function HomeView({
   rowsAfterAbout: HomeRowData[];
   categories: { name: string; count: number; covers: string[] }[];
 }) {
-  const store = useStore();
-  const handlers = useCardHandlers();
-
   return (
     <div className="pt-4">
       {/* One H1 per page for search engines; visually the hero carries the page. */}
       <h1 className="sr-only">Rasakatha.lk — buy Sinhala and English books online in Sri Lanka</h1>
 
-      {slides.length > 0 && (
-        <HeroCarousel
-          slides={slides}
-          heroBooks={heroBooks}
-          wish={store.wish}
-          onToggleWish={store.toggleWish}
-          onBuy={store.addBookToCart}
-          onOpen={store.openBook}
-        />
-      )}
+      {slides.length > 0 && <HeroSection slides={slides} heroBooks={heroBooks} />}
 
       <TrustStrip />
 
-      {rowsBeforeGenres.map((row) => (
-        <HomeRow key={row.title} title={row.title} initialItems={row.items} viewAllHref={row.viewAllHref} {...handlers} />
+      {rowsBeforeGenres.map((row, i) => (
+        <HomeRow key={row.title} title={row.title} items={row.items} viewAllHref={row.viewAllHref} priorityCount={i === 0 ? 3 : 0} />
       ))}
 
       <CategoryTiles categories={categories} />
@@ -55,7 +42,7 @@ export default function HomeView({
       <AboutBanner />
 
       {rowsAfterAbout.map((row) => (
-        <HomeRow key={row.title} title={row.title} initialItems={row.items} viewAllHref={row.viewAllHref} {...handlers} />
+        <HomeRow key={row.title} title={row.title} items={row.items} viewAllHref={row.viewAllHref} />
       ))}
 
       <Footer />

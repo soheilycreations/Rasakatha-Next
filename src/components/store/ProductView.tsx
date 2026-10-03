@@ -11,27 +11,24 @@ import { trackViewItem } from "@/lib/analytics";
 import { triggerFlyToCart } from "@/lib/fly-to-cart";
 import BookCover from "./BookCover";
 import StarRating from "./StarRating";
-import HomeRow from "./HomeRow";
 import ShareButtons from "./ShareButtons";
 import ProductReviews from "./ProductReviews";
 import Footer from "./Footer";
-import { useCardHandlers, useStore } from "./StoreContext";
+import { useStore } from "./StoreContext";
 import { IconHeart, IconCart, IconChevronLeft, IconTruck } from "./icons";
 
 export default function ProductView({
   book,
-  moreByAuthor,
-  related,
+  moreRows,
   shareUrl,
 }: {
   book: CatalogBook;
-  moreByAuthor: CatalogBook[];
-  related: CatalogBook[];
+  // server-rendered "More by author" / "More in category" rows
+  moreRows: React.ReactNode;
   shareUrl: string;
 }) {
   const router = useRouter();
   const store = useStore();
-  const handlers = useCardHandlers();
   const [qty, setQty] = useState(1);
 
   const handleAdd = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -230,24 +227,7 @@ export default function ProductView({
         <ProductReviews bookId={book.id} />
       </div>
 
-      <div className="mt-14">
-        {moreByAuthor.length > 0 && (
-          <HomeRow
-            title={`More by ${book.author}`}
-            initialItems={moreByAuthor}
-            viewAllHref={moreByAuthor.length >= 8 ? authorHref(book.author) : undefined}
-            {...handlers}
-          />
-        )}
-        {related.length > 0 && (
-          <HomeRow
-            title={`More in ${book.category}`}
-            initialItems={related}
-            viewAllHref={categoryHref(book.category)}
-            {...handlers}
-          />
-        )}
-      </div>
+      <div className="mt-14">{moreRows}</div>
 
       <Footer />
 

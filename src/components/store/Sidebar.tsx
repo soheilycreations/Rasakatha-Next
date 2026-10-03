@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { bookHref } from "@/lib/links";
@@ -24,36 +23,22 @@ const NAV_ICONS = {
   "My Library": IconLibrary,
 };
 
-type TrendingBook = {
-  id: string;
-  title: string;
-  author: string;
-  cover: string | null;
-};
+import type { Trending } from "@/lib/server/trending";
 
 export default function Sidebar({
   nav,
+  trending: { items: trending, basis },
   onNavSelect,
   onOpenBook,
   variant = "desktop",
 }: {
   nav: string;
+  // rendered on the server (refreshed every 5 minutes), no client fetch
+  trending: Trending;
   onNavSelect: (label: string) => void;
   onOpenBook: (book: { id: string; title: string }) => void;
   variant?: "desktop" | "drawer";
 }) {
-  const [trending, setTrending] = useState<TrendingBook[]>([]);
-  const [basis, setBasis] = useState<"recent" | "all_time">("recent");
-
-  useEffect(() => {
-    fetch("/api/trending-books?limit=10")
-      .then((r) => r.json())
-      .then((data: { items: TrendingBook[]; basis: "recent" | "all_time" }) => {
-        setTrending(data.items);
-        setBasis(data.basis);
-      });
-  }, []);
-
   return (
     <aside
       className={

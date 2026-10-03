@@ -7,7 +7,6 @@ import { categoryHref } from "@/lib/links";
 import CatalogGrid from "./CatalogGrid";
 import Pager from "./Pager";
 import Footer from "./Footer";
-import { useCardHandlers } from "./StoreContext";
 
 type Chip = { name: string; count: number };
 
@@ -27,6 +26,7 @@ export default function CatalogListing({
   initialItems,
   initialPageCount,
   initialTotal,
+  initialGrid,
   chips,
   activeChip,
   header,
@@ -39,13 +39,14 @@ export default function CatalogListing({
   initialItems: CatalogBook[];
   initialPageCount: number;
   initialTotal: number;
+  // server-rendered cards for the first page (shown until the visitor changes sort/filter/page)
+  initialGrid?: React.ReactNode;
   chips?: Chip[];
   activeChip?: string;
   header?: React.ReactNode;
   defaultOrder?: string;
   defaultInStockOnly?: boolean;
 }) {
-  const handlers = useCardHandlers();
   const [page, setPage] = useState(1);
   const [order, setOrder] = useState(defaultOrder);
   const [inStockOnly, setInStockOnly] = useState(defaultInStockOnly);
@@ -142,7 +143,7 @@ export default function CatalogListing({
           </select>
         </div>
 
-        <CatalogGrid items={data.items} loading={loading} {...handlers} emptyMessage="No books here yet." />
+        {isInitial && initialGrid ? initialGrid : <CatalogGrid items={data.items} loading={loading} emptyMessage="No books here yet." />}
         <Pager
           page={page}
           pageCount={data.pageCount}

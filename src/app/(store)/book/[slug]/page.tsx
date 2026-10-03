@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 import ProductView from "@/components/store/ProductView";
+import HomeRow from "@/components/store/HomeRow";
 import { forCards, getBookById, getByAuthor, getByCategory } from "@/lib/catalog";
-import { bookHref, bookIdFromParam, categoryHref } from "@/lib/links";
+import { authorHref, bookHref, bookIdFromParam, categoryHref } from "@/lib/links";
 import { absoluteUrl, DEFAULT_OG_IMAGE, SITE } from "@/lib/site";
 
 export const revalidate = 600;
@@ -114,7 +115,20 @@ export default async function BookPage({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
       />
-      <ProductView book={book} moreByAuthor={moreByAuthor} related={related} shareUrl={absoluteUrl(canonical)} />
+      <ProductView
+        book={book}
+        shareUrl={absoluteUrl(canonical)}
+        moreRows={
+          <>
+            <HomeRow
+              title={`More by ${book.author}`}
+              items={moreByAuthor}
+              viewAllHref={moreByAuthor.length >= 8 ? authorHref(book.author) : undefined}
+            />
+            <HomeRow title={`More in ${book.category}`} items={related} viewAllHref={categoryHref(book.category)} />
+          </>
+        }
+      />
     </>
   );
 }
