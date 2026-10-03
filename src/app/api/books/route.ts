@@ -7,6 +7,7 @@ import {
   getNewest,
   getOnSale,
   applyListOptions,
+  forCards,
   paginate,
   searchCatalog,
 } from "@/lib/catalog";
@@ -28,12 +29,12 @@ export async function GET(request: Request) {
 
   if (ids) {
     const list = await getByIds(ids.split(",").filter(Boolean));
-    return Response.json({ items: list, total: list.length, page: 1, pageCount: 1 }, CACHE);
+    return Response.json({ items: forCards(list), total: list.length, page: 1, pageCount: 1 }, CACHE);
   }
 
   if (sort === "new") {
     const items = await getNewest(limit);
-    return Response.json({ items, total: items.length, page: 1, pageCount: 1 }, CACHE);
+    return Response.json({ items: forCards(items), total: items.length, page: 1, pageCount: 1 }, CACHE);
   }
 
   let items: Awaited<ReturnType<typeof getCatalog>>;
@@ -45,5 +46,7 @@ export async function GET(request: Request) {
   else items = await getCatalog();
 
   items = applyListOptions(items, searchParams.get("order"), searchParams.get("instock") === "1");
-  return Response.json(paginate(items, page, limit), CACHE);
+  const result = paginate(items, page, limit);
+  // card lists never show the description, so don't ship it
+  return Response.json({ ...result, items: forCards(result.items) }, CACHE);
 }

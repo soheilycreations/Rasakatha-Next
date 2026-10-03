@@ -1,0 +1,602 @@
+{
+  "descriptions": {
+    "filled": 13,
+    "improved": 700,
+    "unchanged": 122,
+    "keptLongerCurrent": 16,
+    "stillEmpty": 638
+  },
+  "publishers": {
+    "normalizedFromVariant": 75,
+    "filledFromWoo": 0,
+    "stillUnknown": [
+      {
+        "id": "10235",
+        "title": "Rahasinwath love nokala seka | රහසින්වත් Love නොකළ සේක",
+        "category": "Novel"
+      },
+      {
+        "id": "10353",
+        "title": "ඉඩෝරයේ කුසුමක් | Idoraye Kusumak",
+        "category": "Novel"
+      },
+      {
+        "id": "10398",
+        "title": "ගිම්හානයේ කතාවක් | Gimhanaye Kathawak",
+        "category": "Translations"
+      },
+      {
+        "id": "10495",
+        "title": "තරගයේ වීරයා | Tharagaye Weeraya",
+        "category": "Motivational"
+      },
+      {
+        "id": "10559",
+        "title": "කඩවර | Kadawara - Hard Cover",
+        "category": "Novel"
+      },
+      {
+        "id": "10565",
+        "title": "එකයි භාග දෙකයි | Ekai bhaga dekai",
+        "category": "Novel"
+      },
+      {
+        "id": "10693",
+        "title": "විජය සිනමාවේදියා සහ දේශපාලනඥයා | Wijaya",
+        "category": "Other"
+      },
+      {
+        "id": "10699",
+        "title": "ධර්මසිරි සිනමාවලෝකනය | Dharmasiri Sinamawalokanaya",
+        "category": "Other"
+      },
+      {
+        "id": "10708",
+        "title": "කම්බිලි | Kambili - Hard Cover",
+        "category": "Novel"
+      },
+      {
+        "id": "10969",
+        "title": "ඇත්තටම ඒ මිදි ඇඹුල් කවි පොත් කට්ටලය | Kavi poth kattalaya",
+        "category": "Poetry"
+      },
+      {
+        "id": "13264",
+        "title": "ඇන්ස්ලම් - උරග සනුහරේ ක්ෂීරපායි ප්‍රේමවන්තයා | Anslam",
+        "category": "Other"
+      },
+      {
+        "id": "13360",
+        "title": "ඝාතකයා නිදැල්ලේ | Ghathakaya Nidalle",
+        "category": "Translations"
+      },
+      {
+        "id": "15141",
+        "title": "Padma Thatakaya , Part 2 | පද්ම තටාකය , 2 කොටස",
+        "category": "Poetry"
+      },
+      {
+        "id": "15380",
+        "title": "Siwura Saha Nagula | සිවුර සහ නගුල",
+        "category": "History"
+      },
+      {
+        "id": "15426",
+        "title": "දහසක් තරු මැද / dahasak tharu mada",
+        "category": "Young Adult"
+      },
+      {
+        "id": "15868",
+        "title": "ප්‍රින්ස්ගේ රහස් දූතයා | Prinsge rahas duuthaya",
+        "category": "Young Adult"
+      },
+      {
+        "id": "15871",
+        "title": "අවුල් ජාලාවක් වූ ප්‍රින්ස්ගේ රාත්‍රිය | Awul Jalawak wu prinsge rathriya",
+        "category": "Young Adult"
+      },
+      {
+        "id": "15874",
+        "title": "POLITY",
+        "category": "Political"
+      },
+      {
+        "id": "15883",
+        "title": "202 ක් කමටහන්",
+        "category": "Spiritual"
+      },
+      {
+        "id": "15898",
+        "title": "නුඹ නො ඒ නම් කියන්න | Numba no a nam kiyanna",
+        "category": "Poetry"
+      },
+      {
+        "id": "15901",
+        "title": "රාත්‍රිය මත රතු කුරුල්ලෙක් ලැගගෙන | Rathriya matha rathu kurullek lagagena",
+        "category": "Poetry"
+      },
+      {
+        "id": "15968",
+        "title": "මාතර මහ කැරැල්ල | Mathara Maha Karalla",
+        "category": "History"
+      },
+      {
+        "id": "16318",
+        "title": "ජනාධිපති ධූරයෙන් මා නෙරපීමේ කුමන්ත්‍රණය | Janadipathi Dhurayen Ma Nerapime Kumanthranaya - Gotabaya Rajapaksha",
+        "category": "Political"
+      },
+      {
+        "id": "16322",
+        "title": "The Conspiracy - Gotabaya Rajapaksha",
+        "category": "Political"
+      },
+      {
+        "id": "16402",
+        "title": "500 Gift Voucher",
+        "category": "Other"
+      },
+      {
+        "id": "16410",
+        "title": "1,000 Gift Voucher",
+        "category": "Other"
+      },
+      {
+        "id": "16413",
+        "title": "1,500 Gift Voucher",
+        "category": "Other"
+      },
+      {
+        "id": "16416",
+        "title": "2,000 Gift Voucher",
+        "category": "Other"
+      },
+      {
+        "id": "16419",
+        "title": "5,000 Gift Voucher",
+        "category": "Other"
+      },
+      {
+        "id": "16684",
+        "title": "Garden University Of Peradeniya  - Hard Cover",
+        "category": "Other"
+      },
+      {
+        "id": "16688",
+        "title": "සීත දේශයේ කම්බිලි | Seetha Deshaye Kambili",
+        "category": "Translations"
+      },
+      {
+        "id": "16719",
+        "title": "Love Sex &amp; Jealousy | ආදරය ලිංගිකත්වය සහ ඊර්ෂ්‍යාව",
+        "category": "Novel"
+      },
+      {
+        "id": "16871",
+        "title": "සිද්ධාර්ථ | Siddhartha",
+        "category": "Other"
+      },
+      {
+        "id": "18618",
+        "title": "වීර චූඩාමණි | Weera Chuudamani",
+        "category": "Political"
+      },
+      {
+        "id": "18621",
+        "title": "කළු පැහැති කුඩා පොත | Kalu pahathi kuda potha",
+        "category": "Poetry"
+      },
+      {
+        "id": "18942",
+        "title": "මල් පිපෙන හිරොෂිමා | Mal Pipena Hiroshima",
+        "category": "Poetry"
+      },
+      {
+        "id": "18949",
+        "title": "ප්‍රේමයේ ගිම්හානයට පසු | After the Summer of Love",
+        "category": "Poetry"
+      },
+      {
+        "id": "18955",
+        "title": "1981 යාපනය ගිනිලෑම | 1981 Yapanaya Ginilama",
+        "category": "History"
+      },
+      {
+        "id": "19035",
+        "title": "පාස්කු කොමිෂන් වාර්තාව හා අපරාධකරුවන් වසන් කිරීම | Pasku koimishan warthawa ha aparadakaruwan wasan kireema",
+        "category": "Political"
+      },
+      {
+        "id": "19091",
+        "title": "නුවරක සෙනෙහස | Nuwaraka Senehasa",
+        "category": "Novel"
+      },
+      {
+        "id": "19097",
+        "title": "රාජ්‍ය දේපල මංකොල්ල සහ ජාත්‍යන්තර කළු සලිලි ජාවාරම | Rajya Depala Mankollalla Saha Jathyanthara Kalu Salli Jawarama",
+        "category": "Political"
+      },
+      {
+        "id": "19189",
+        "title": "බටලන්දට ගිනි තැබුවෙමු | Batalandata Gini Thabuwemu",
+        "category": "Political"
+      },
+      {
+        "id": "23385",
+        "title": "කඳුළු කුණාටුව | Kandulu Kunatuwa",
+        "category": "Novel"
+      },
+      {
+        "id": "23655",
+        "title": "නිරුවත් වානරයා / Niruwath wanaraya",
+        "category": "Translations"
+      },
+      {
+        "id": "23803",
+        "title": "බේබි / Bebi / (ත්‍රිත්ව 2)",
+        "category": "Romance"
+      },
+      {
+        "id": "23904",
+        "title": "Wrapping Papers",
+        "category": "Other"
+      },
+      {
+        "id": "23943",
+        "title": "අහිමි විප්ලවය ? / Ahimi Viplawaya",
+        "category": "Political"
+      },
+      {
+        "id": "25509",
+        "title": "පුරප්පට්ටුව | Purappattuwa",
+        "category": "Novel"
+      },
+      {
+        "id": "30273",
+        "title": "දොරකඩ දෙවොල | Dorakada Dewola",
+        "category": "Novel"
+      },
+      {
+        "id": "30339",
+        "title": "ලැවෙන්ඩ්‍රා | Lavendra",
+        "category": "Novel"
+      },
+      {
+        "id": "30512",
+        "title": "MY DEAR Crush | A Flower Without A Name",
+        "category": "Novel"
+      },
+      {
+        "id": "30652",
+        "title": "හත්පෙති මල | Hathpethi Mala",
+        "category": "Novel"
+      },
+      {
+        "id": "30677",
+        "title": "සරාගික ගස්වල මලානික පත් | Saragika gaswala malanika path",
+        "category": "Poetry"
+      },
+      {
+        "id": "30918",
+        "title": "08:45",
+        "category": "Novel"
+      },
+      {
+        "id": "31448",
+        "title": "නිල් ලිට්මස් | Nil Litmus",
+        "category": "Novel"
+      },
+      {
+        "id": "33660",
+        "title": "කයාල් සර් | Kayal Sir",
+        "category": "Novel"
+      },
+      {
+        "id": "33664",
+        "title": "කුවල්‍ය | Kuwalya",
+        "category": "Novel"
+      },
+      {
+        "id": "33852",
+        "title": "භව ද්වාර | Bhawa Dwara",
+        "category": "Novel"
+      },
+      {
+        "id": "33855",
+        "title": "ශ්වේත නිද්‍රාව | Shwetha Nidrawa",
+        "category": "Novel"
+      },
+      {
+        "id": "33858",
+        "title": "පුරාවතක ශේෂ | Purawathaka Shesha",
+        "category": "Novel"
+      },
+      {
+        "id": "33861",
+        "title": "චන්ද්‍ර හෝරාව | Chandra Horawa",
+        "category": "Novel"
+      },
+      {
+        "id": "38511",
+        "title": "ටොක්සි ඩොක්සි | Toxie  Doxie",
+        "category": "Novel"
+      },
+      {
+        "id": "38546",
+        "title": "මල්කොටුවේ ගෙදර | Malkotuwe Gedara",
+        "category": "Novel"
+      },
+      {
+        "id": "5526",
+        "title": "Sherlock Holmes Wikramanwitha Athdakeem | වික්‍රමාන්විත අත්දැකීම්",
+        "category": "Translations"
+      },
+      {
+        "id": "6031",
+        "title": "Makara Rajadahana | මකර රජදහන",
+        "category": "Children"
+      },
+      {
+        "id": "6116",
+        "title": "මගේ පුංචි මාතාහාරි | Mage Punchi Mata Hari",
+        "category": "Poetry"
+      },
+      {
+        "id": "6184",
+        "title": "ශ්‍රී ලංකාවේ ඓතිහාසික ජල කළමනාකරණය | Sri Lankawe Ithihasika jala kalamanakaranaya",
+        "category": "History"
+      },
+      {
+        "id": "6193",
+        "title": "ප්‍රින්ස්ගේ සිහින ලෝකය | Prinsge Sihina Lokaya",
+        "category": "Young Adult"
+      },
+      {
+        "id": "6204",
+        "title": "ඩයනා ඇගේ කඳුළු කතාව | Diana Her True Story",
+        "category": "Translations"
+      },
+      {
+        "id": "6384",
+        "title": "101 ක් කමටහන්",
+        "category": "Spiritual"
+      },
+      {
+        "id": "6518",
+        "title": "අහම්බයකින් මිස අපි හමු නොවෙමු කිසිදා යලි | Ahambayakin misa api hamu nowemu kisida yali",
+        "category": "Novel"
+      },
+      {
+        "id": "6586",
+        "title": "අතිසාකී | Athisakie",
+        "category": "Children"
+      },
+      {
+        "id": "6588",
+        "title": "Athisakie",
+        "category": "Children"
+      },
+      {
+        "id": "6590",
+        "title": "මගේ කතාව | Mage Kathawa",
+        "category": "Other"
+      },
+      {
+        "id": "6678",
+        "title": "ඉතින් කවියනි හොඳට නින්ද යනවද රෑට ? | Ithin kawiyani hodata ninda yanawa d raata",
+        "category": "Poetry"
+      },
+      {
+        "id": "6682",
+        "title": "හැටේවත්තේ මග්දලේනා | Hatewaththe Magdalena",
+        "category": "Poetry"
+      },
+      {
+        "id": "6713",
+        "title": "අකුරු | Akuru",
+        "category": "Other"
+      },
+      {
+        "id": "6799",
+        "title": "Hadawath warak | හදවත් වරක්",
+        "category": "Novel"
+      },
+      {
+        "id": "6884",
+        "title": "Pathme Palathen Hirikada Hamagena | පත්මේ පළාතෙන් හිරිකඩ හමාගෙන",
+        "category": "Poetry"
+      },
+      {
+        "id": "7215",
+        "title": "ධූමලාවණ්‍යාගාරය | Dhoomalawanyagaraya",
+        "category": "Poetry"
+      },
+      {
+        "id": "7918",
+        "title": "ස්වෛරී | Swairee",
+        "category": "Novel"
+      },
+      {
+        "id": "8327",
+        "title": "පනාපුත්‍රගේ මතක වස්තුව | Panaputhrage Mathaka Wasthuwa",
+        "category": "Other"
+      },
+      {
+        "id": "8662",
+        "title": "දියුණුවේ මන්ත්‍ර | Diyunuwe Manthra",
+        "category": "Motivational"
+      },
+      {
+        "id": "8664",
+        "title": "බිස්නස් පිස්සුව | Business pissuwa",
+        "category": "Motivational"
+      },
+      {
+        "id": "9751",
+        "title": "මාගරට් | Magarat",
+        "category": "Novel"
+      },
+      {
+        "id": "9757",
+        "title": "ආසික්ලන්තය | Asiklanthaya",
+        "category": "Novel"
+      }
+    ]
+  },
+  "specs": {
+    "pages": 431,
+    "binding": 1257,
+    "isbn": 0,
+    "language": 471,
+    "sizeFoundButNoColumn": 2
+  },
+  "samples": [
+    {
+      "id": "10033",
+      "title": "Bio Karapu AL | බයෝ කරපු ඒලෙවල්",
+      "before": "මට ඕනෙ දැං ඔයා එක්ක ස්නායුවක් දිගේ ගලන ආවේගයක් වෙන්න ඔයාට ඉස්සෙල්ලාම දුවන්න දීලා අල්ලන්න වගේ දුවගෙන එන්න අපිට ඒ ගමං පුලුවන් කංකාල පේෂියක සෛල වෙන්න කොයිතරම් දෙපැත්තට ඇදුණත් ඩෙස්මසෝම අල්ලං ඉන්න විදිහ ගැන කියවන්න අපේ ආදරෙත්",
+      "after": "මට ඕනෙ දැං ඔයා එක්ක ස්නායුවක් දිගේ ගලන ආවේගයක් වෙන්න\nඔයාට ඉස්සෙල්ලාම දුවන්න දීලා\nඅල්ලන්න වගේ දුවගෙන එන්න\n\nඅපිට ඒ ගමං පුලුවන් කංකාල පේෂියක සෛල වෙන්න\nකොයිතරම් දෙපැත්තට ඇදුණත්\nඩෙස්මසෝම අල්ලං ඉන්න විදිහ ගැන කියවන්න\nඅපේ ආදරෙත් ඒ වගේ නේද කියලා කොඳුරන්න\n\nඉතිං ඉක්මනට කියන්න මට ඔයා එතවද නැද්ද යන්න",
+      "beforeLen": 220,
+      "afterLen": 289
+    },
+    {
+      "id": "10035",
+      "title": "Lamuthu Amaya | ළමුතු අමයා",
+      "before": "ළමුතු අමියා ළමා පොතක් නොව ළමයෙකුගෙ සැබෑ සිතුවිලි පිළිබඳ උපහාසාත්මක හා යථාර්ථවාදී නවකතාවකි. ළමා කතා කියලා ජාතියක් තියෙනවා නේද? ඒ හැම එකකම තියෙන්නෙ හොඳ ළමයෙක් වෙයන් පුතේ' කියන පණිවිඩය. මට එකක් කියන්න ඕන. මට අමුතුවෙන් හොඳ ව",
+      "after": "ළමුතු අමියා ළමා පොතක් නොව ළමයෙකුගෙ සැබෑ සිතුවිලි පිළිබඳ උපහාසාත්මක හා යථාර්ථවාදී නවකතාවකි.\n\nළමා කතා කියලා ජාතියක් තියෙනවා නේද? ඒ හැම එකකම තියෙන්නෙ හොඳ ළමයෙක් වෙයන් පුතේ' කියන පණිවිඩය. මට එකක් කියන්න ඕන. මට අමුතුවෙන් හොඳ වෙන්න උවමනාවක් නෑ මම කොහොමටත් හොඳයි. වැඩිහිටියන්ගෙ තියෙන ලොකුම ප්‍රශ්න මොකක්ද දන්නවද? ලොකු වෙනකොට පොඩි කාලේ අමතක වෙන එක.\n\nපොඩිකමේ වාසියක් තමයි වැඩිහිටියෝ බය වෙන දේවලට අපි බය නොවෙන එක. අවාසිය තමයි එයාලා බය නොවෙන දේවලට අපි බය වෙන එක. ළමයෙක් වුණාම ඕන දෙයක් නොවැටහුණා වගේ ඉන්න පුළුවන්. අවාසනාවකට ගොඩක් ළමයින්ට ඒක වැටහෙන්නෙ නෑ.\n\nවැඩිහිටියෝ බලාගෙන ඉන්නේ ව්යායාලා කියන කරන දේවල් තේරුම් ය…",
+      "beforeLen": 220,
+      "afterLen": 772
+    },
+    {
+      "id": "10037",
+      "title": "selavi | සේලවී",
+      "before": "තේ වත්ත මුදුනෙදි දැරණියගලට ටිකක් නුහුරු තද හුළඟක් හමාගෙන ගියේ හිටි හැටියේ හයිය ගස්වල පවා මුදුන් හොළවමින්, තද කොළ පාට කොළත් බිම හෙළමින් හමාගෙන ගිය ඒ හුළඟ තුන්දෙනාගෙම අවධානය දිනා ගත්තා නුරා ඒ හුළඟ ඇගේ දැවටිලා යද්දි ඇස් පිය",
+      "after": "තේ වත්ත මුදුනෙදි දැරණියගලට ටිකක් නුහුරු තද හුළඟක් හමාගෙන ගියේ හිටි හැටියේ හයිය ගස්වල පවා මුදුන් හොළවමින්, තද කොළ පාට කොළත් බිම හෙළමින් හමාගෙන ගිය ඒ හුළඟ තුන්දෙනාගෙම අවධානය දිනා ගත්තා\n\nනුරා ඒ හුළඟ ඇගේ දැවටිලා යද්දි ඇස් පියාගත්තා රාද්ගේ ඇස් මොහොතකට යොමුවුණා ඇස්පිය වුණු නුරා දිහාවට කපිල් හුළගේ සුවඳ විඳින්න පොඩි ඉස්පාසුවක් ගත්තා",
+      "beforeLen": 220,
+      "afterLen": 326
+    },
+    {
+      "id": "10117",
+      "title": "Kandak Sema | කන්දක් සේමා",
+      "before": "නූපා ජපානයේ නීගතාවට අරුමය බලන්න නෙවෙයි. යන්නේ සකුරා මල් පිපුණු තමුන්ගෙ රටේ සමාජ ආර්ථික යයි, සංස්කෘති යයි, දේශපාලනයයි නූපාව ජපානයට පිටුවහල් කරනවා. නූපා, නීගතාවෙ සන්ජෝ නගරයෙ සැරිසරන්නිය වෙන්නේ කවුරු හරි සොරා ගත්තු තමුන්ගෙ",
+      "after": "නූපා ජපානයේ නීගතාවට අරුමය බලන්න නෙවෙයි. යන්නේ සකුරා මල් පිපුණු\n\nතමුන්ගෙ රටේ සමාජ ආර්ථික යයි, සංස්කෘති යයි, දේශපාලනයයි නූපාව ජපානයට පිටුවහල් කරනවා.\n\nනූපා, නීගතාවෙ සන්ජෝ නගරයෙ සැරිසරන්නිය වෙන්නේ කවුරු හරි සොරා ගත්තු තමුන්ගෙ තරුණ ජීවිතය නැවත සොයා ගන්නයි.\n\nසුමිකාවා පරම්පරාවෙ මළවුන් ඇවිත්, ලංකාවෙන් ආව ඥාතියා ප්‍රතික්ෂේප කළාට, සන්ජෝ නගරයෙ සැරිසරන්නිය - නගරයටයි, එහි සංස්කෘතියටයි බද්ධ වෙනවා.\n\nපෙකණි වැලේ එල්ලිච්ච පුංචි කලල දෙකක් උපන් රටේදියි, දීග ගිය රටේදියි එළියට ඇදලා දානවා.\n\nමේ සැරිසරන්නිය සොයා යමු.",
+      "beforeLen": 219,
+      "afterLen": 497
+    },
+    {
+      "id": "10235",
+      "title": "Rahasinwath love nokala seka | රහසින්වත් Love නොකළ සේක",
+      "before": "අනේ මන්දා දැන් මට හිතෙනවා 'ඔයාව මට මදියි' කියලා. මට තේරෙන්නෙ නැත්තෙ මට ඔයාව මදියි කියලා දැනෙන්නෙ ඇයි කියලා. වෙලාවකට මට ඔහොම හිතුණම, මම කරන්නේ ඔයාව සීමාවක් නැතුව කිස් කරන එක. මම ආසයි එහෙම අසීමිතව ඔයාව කිස් කරන්න. එහෙම වෙල",
+      "after": "අනේ මන්දා දැන් මට හිතෙනවා 'ඔයාව මට මදියි' කියලා. මට තේරෙන්නෙ නැත්තෙ මට ඔයාව මදියි කියලා දැනෙන්නෙ ඇයි කියලා. වෙලාවකට මට ඔහොම හිතුණම, මම කරන්නේ ඔයාව සීමාවක් නැතුව කිස් කරන එක. මම ආසයි එහෙම අසීමිතව ඔයාව කිස් කරන්න. එහෙම වෙලාවට මට හිතෙනවා 'මට ඔයාව මදි නෑ' කියලා. ආපහු කිස් කරලා ඉවර වුණාම ආයෙත් 'මට ඔයාව මදි' වෙනවා.\n\nමම දන්නවා ඔයානම් කැමති, මට හැමවෙලාවකම 'ඔයාව මදි' කියලා හිතෙනවට කියලා. මොනා කරන්නද.. අපි බලමු ඔයාව මට ඇතිවෙන්නෙ කවදද කියලා. ඇත්තමයි මම නම් ආස ඔයාව මට තව තව මදි වෙනවනම්.\n\nරහසින්වත් Love නොකළ සේක | දේශාන් සේනාරත්න©",
+      "beforeLen": 220,
+      "afterLen": 523
+    }
+  ],
+  "publisherVariantsSeen": {
+    "Kanol publishers": 40,
+    "Rasakatha Pvt Ltd, RasaKatha Publishers": 6,
+    "Sarasavi Publishers": 120,
+    "Platform for alternate culture": 1,
+    "Agahas Publishers": 59,
+    "කතෘ ප්‍රකාශන, Author Publication": 32,
+    "Various": 12,
+    "Stationery": 12,
+    "Wijesooriya Grantha Kendraya - විජේසූරිය ග්‍රන්ථ කේන්ද්‍රය": 36,
+    "Muses Publishing House": 14,
+    "Seri Publication": 32,
+    "Pothak.lk": 13,
+    "Samayawardhana Publishers": 4,
+    "Wishishta Prakashakayo": 10,
+    "Susara Publishers": 38,
+    "Godage Publishers": 122,
+    "Sooriya Publishers": 39,
+    "surasa": 14,
+    "Vidarshana Publishers": 132,
+    "Rasakatha Pvt Ltd": 4,
+    "Grantha Publishers": 19,
+    "KBooks": 12,
+    "Pahan Publisher": 30,
+    "Progress Publishing": 22,
+    "PothMee Publication": 3,
+    "RasaKatha Publishers": 65,
+    "Subhavi Publishers": 22,
+    "Progressive Publishing House / Pragathi Prakashana": 25,
+    "Biso Publishers": 14,
+    "Fast Publishers": 48,
+    "Thothanna Publishing House": 3,
+    "Kavivara Prakashana - කවිවර ප්‍රකාශන": 2,
+    "Thrimana Prakashana": 2,
+    "SSA - සමාජ විද්‍යාඥයින්ගේ සංගමය": 22,
+    "Miyuro poth prakashakayo": 1,
+    "Kadulla Publishers": 4,
+    "Rawaya Publishers, රාවය ප්‍රකාශන": 42,
+    "Sama Publishers, සම ප්‍රකාශන": 9,
+    "Agasu publications": 1,
+    "Santhawa Publishers, සන්ථව ප්‍රකාශන": 9,
+    "Sameera Publishers": 2,
+    "Samanthi Prakashana - සමන්ති ප්‍රකාශන": 7,
+    "Darshana Prakashana": 4,
+    "Heladiva, හෙළදිව ප්‍රකාශකයෝ": 2,
+    "Vijitha Yapa Publications": 12,
+    "Wasana Publishers": 13,
+    "Kurulu Poth Prakashakayo": 1,
+    "Kurulu publishers, කුරුළු පොත් ප්‍රකාශකයෝ": 8,
+    "Visidunu Prakashakayo": 4,
+    "thinethra": 1,
+    "Graphicare publishers": 3,
+    "dayawansha jayakodi": 60,
+    "Sayura Publishers": 13,
+    "Saharakshi Publishers": 7,
+    "Buddhist Cultural Center": 2,
+    "Niyamuwa": 17,
+    "Sithuwili Publishers": 1,
+    "Author Publication": 39,
+    "Sahurda Publisher": 1,
+    "Libro Publisher": 1,
+    "Santhawa Publishers": 3,
+    "Neptune Publications": 1,
+    "විප්ලවවාදී ශිෂ්‍ය සංගමය": 2,
+    "Tout Publishing": 3,
+    "Ahas Publisher": 7,
+    "Aashirwada Publisher": 1,
+    "Gunasena Publisher": 35,
+    "M D Gunasena": 1,
+    "Lanka Books.lk": 1,
+    "Silika Publication": 2,
+    "Reading Planet": 2,
+    "Keheli Publishers": 4,
+    "Aratuwa publishers": 3,
+    "Bookrack Publishers": 2,
+    "Rusiyawa Prakashakayo": 1,
+    "S&amp;T Group": 1,
+    "Sakithma publications": 1,
+    "Opiuma Publisher": 2,
+    "CR Publishers": 2,
+    "Sankha Publishers": 2,
+    "Moonlight Publications": 1,
+    "Reader's Hub": 1,
+    "Akura Book Publishers": 1,
+    "Mathaka Publishers": 1,
+    "Nohandunanni Publications": 3,
+    "Rejina Publishers": 2,
+    "Lakshi Publishers": 3,
+    "batahira ahasa": 1,
+    "Malshan Walimunige": 1,
+    "Dewmini Publication": 1,
+    "Nishee Publications": 1,
+    "Abdul Publishing": 1,
+    "Nonimi Prakashana": 1,
+    "Sanhida Publishers": 2,
+    "Miyuro Publishers": 1,
+    "Raduga Publishers Moscow": 5,
+    "Nalin Publishers": 1,
+    "Kathroo Prakashana, කතෘ ප්‍රකාශන": 2,
+    "WRFT": 1,
+    "Sarasavi Publishers, Godage Publishers": 1,
+    "Nirmala Prakashana": 3
+  },
+  "counts": {
+    "books": 1489,
+    "ownTitles": 75,
+    "withPublishedAt": 1489
+  }
+}

@@ -1,5 +1,5 @@
 import { supabase } from "./supabase";
-import { getByIds, getNewest } from "@/lib/catalog";
+import { getByIds, getNewest, getOwnTitles } from "@/lib/catalog";
 
 const RECENT_DAYS = 14;
 
@@ -41,6 +41,13 @@ export async function getTrending(limit: number): Promise<Trending> {
     for (const [id] of [...allTimeQty.entries()].sort((a, b) => b[1] - a[1])) {
       if (chosen.size >= limit) break;
       chosen.add(id);
+    }
+  }
+  if (chosen.size < limit) {
+    // quiet weeks: Rasakatha's own newest titles first
+    for (const book of await getOwnTitles(limit * 2)) {
+      if (chosen.size >= limit) break;
+      chosen.add(book.id);
     }
   }
   if (chosen.size < limit) {

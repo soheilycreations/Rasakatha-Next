@@ -27,6 +27,7 @@ const emptyForm: Partial<CatalogBook> = {
   publishedYear: null,
   binding: null,
   translator: null,
+  isOwnTitle: false,
 };
 
 function BookForm({
@@ -254,6 +255,10 @@ function BookForm({
             <label className="flex items-center gap-2 text-[13px] text-[var(--ink-dim)]">
               <input type="checkbox" checked={form.inStock !== false} onChange={(e) => set("inStock", e.target.checked)} className="accent-accent" />
               In Stock
+            </label>
+            <label className="flex items-center gap-2 text-[13px] text-[var(--ink-dim)]">
+              <input type="checkbox" checked={!!form.isOwnTitle} onChange={(e) => set("isOwnTitle", e.target.checked)} className="accent-accent" />
+              Our title (Rasakatha)
             </label>
           </div>
         </div>

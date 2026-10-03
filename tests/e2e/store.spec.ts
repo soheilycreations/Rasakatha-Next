@@ -80,3 +80,49 @@ test("sitemap contains book URLs", async ({ request }) => {
   expect(xml).toContain("/book/");
   expect(xml).toContain("/privacy-policy");
 });
+
+test("home: New Arrivals first, then Rasakatha titles; hero has no Add to Cart", async ({ page }) => {
+  await page.goto("/");
+  const headings = await page.locator("section h2").allTextContents();
+  expect(headings[0]).toBe("New Arrivals");
+  // the Rasakatha row needs books.is_own_title (supabase/book-order.sql + book-data.sql applied)
+  const probe = await (await page.request.get("/api/books?publisher=rasakatha&limit=60")).json();
+  if ((probe.items as { isOwnTitle?: boolean }[]).some((b) => b.isOwnTitle)) expect(headings[1]).toBe("From Rasakatha Publishers");
+  await expect(page.locator(".hero-root")).toBeVisible();
+  await expect(page.locator(".hero-root").getByRole("button", { name: /add to cart/i })).toHaveCount(0);
+  await expect(page.locator(".hero-root").getByRole("button", { name: /wishlist/i })).toBeVisible();
+});
+
+test("default order: in-stock Rasakatha titles, other in-stock books, then sold out; newest first", async ({ request }) => {
+  type B = { inStock: boolean; isOwnTitle?: boolean; publishedAt?: string | null; id: string };
+  for (const category of ["Novel", "Translations"]) {
+    const res = await request.get(`/api/books?category=${category}&limit=60`);
+    const items = (await res.json()).items as B[];
+    const tier = (b: B) => (!b.inStock ? 2 : b.isOwnTitle ? 0 : 1);
+    for (let i = 1; i < items.length; i++) {
+      const a = items[i - 1];
+      const b = items[i];
+      expect(tier(a), `${category} #${i}`).toBeLessThanOrEqual(tier(b));
+      if (tier(a) === tier(b) && a.publishedAt && b.publishedAt) {
+        expect(Date.parse(a.publishedAt), `${category} #${i} newest first`).toBeGreaterThanOrEqual(Date.parse(b.publishedAt));
+      }
+    }
+  }
+});
+
+test("long descriptions are clamped with a Read more toggle", async ({ page, request }) => {
+  const res = await request.get("/api/books?limit=60&instock=1");
+  const ids = ((await res.json()).items as { id: string }[]).map((b) => b.id);
+  // find a book with a long description via its page
+  for (const id of ids) {
+    await page.goto(`/book/${id}`).catch(() => {}); // the canonical slug redirect can interrupt the first navigation
+    await page.waitForLoadState("load");
+    const toggle = page.getByRole("button", { name: "Read more" });
+    if (await toggle.count()) {
+      await toggle.click();
+      await expect(page.getByRole("button", { name: "Show less" })).toBeVisible();
+      return;
+    }
+  }
+  test.skip(true, "no long description in the first 60 books yet (import not applied)");
+});

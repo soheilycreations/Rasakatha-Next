@@ -6,6 +6,7 @@ import { authorHref, categoryHref, ROUTES } from "@/lib/links";
 import BookCover from "./BookCover";
 import StarRating from "./StarRating";
 import ShareButtons from "./ShareButtons";
+import ClampedText from "./ClampedText";
 import ProductReviews from "./ProductReviews";
 import Footer from "./Footer";
 import BookBuyArea, { BackButton, ViewItemTracker } from "./BookBuyArea";
@@ -106,11 +107,7 @@ export default function ProductView({
               )}
             </div>
 
-            {book.blurb && (
-              <p className="mt-5 max-w-xl whitespace-pre-line text-[14px] leading-relaxed text-[var(--ink-dim)]">
-                {book.blurb}
-              </p>
-            )}
+            {book.blurb && <ClampedText text={book.blurb} className="text-[14px] leading-relaxed text-[var(--ink-dim)]" />}
 
             <BookBuyArea book={book} price={price} />
 

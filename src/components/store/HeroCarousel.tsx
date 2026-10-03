@@ -3,9 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { HeroSlide } from "@/lib/hero-slides";
 import type { CatalogBook } from "@/lib/catalog";
-import { triggerFlyToCart } from "@/lib/fly-to-cart";
 import { circularOffset, slideStyle } from "@/lib/hero-style";
-import { IconCart, IconHeart } from "./icons";
+import { IconHeart } from "./icons";
 import { useStore } from "./StoreContext";
 
 const INTERVAL = 4200;
@@ -23,7 +22,7 @@ export default function HeroCarousel({
   heroBooks: Record<string, CatalogBook>;
   children: React.ReactNode;
 }) {
-  const { wish, toggleWish, addBookToCart, openBook } = useStore();
+  const { wish, toggleWish, openBook } = useStore();
   const [active, setActive] = useState(0);
   const rootRef = useRef<HTMLDivElement>(null);
   const dragState = useRef<{ startX: number } | null>(null);
@@ -76,7 +75,6 @@ export default function HeroCarousel({
     if (i !== active) goTo(i);
     else if (heroBooks[slides[i].id]) openBook(heroBooks[slides[i].id]);
   };
-  const activeBook = n > 0 ? heroBooks[slides[active].id] : undefined;
 
   return (
     <div
@@ -114,23 +112,6 @@ export default function HeroCarousel({
           />
         </button>
 
-        {activeBook && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              if (!activeBook.inStock) {
-                openBook(activeBook);
-                return;
-              }
-              triggerFlyToCart({ rect: e.currentTarget.getBoundingClientRect(), imgSrc: activeBook.cover });
-              addBookToCart(activeBook);
-            }}
-            className="pointer-events-auto absolute bottom-5 right-4 flex items-center gap-2 rounded-full bg-accent px-4 py-2.5 text-[13px] font-bold text-white shadow-[0_10px_24px_-8px_rgba(239,66,56,0.7)] transition-transform hover:scale-105 active:scale-95 sm:bottom-6 sm:right-6 sm:px-5 sm:py-3 sm:text-sm max-sm:bottom-auto max-sm:left-4 max-sm:right-auto max-sm:top-4 max-sm:px-3"
-          >
-            <IconCart className="h-4 w-4" />
-            <span className="max-sm:sr-only">{activeBook.inStock ? "Add to Cart" : "View Book"}</span>
-          </button>
-        )}
       </div>
 
       <div className="hero-fade pointer-events-none absolute inset-y-0 left-0 z-20 w-16 bg-gradient-to-r from-panel via-panel/70 to-transparent sm:w-24" />
