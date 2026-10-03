@@ -110,19 +110,30 @@ test("default order: in-stock Rasakatha titles, other in-stock books, then sold 
   }
 });
 
-test("long descriptions are clamped with a Read more toggle", async ({ page, request }) => {
-  const res = await request.get("/api/books?limit=60&instock=1");
-  const ids = ((await res.json()).items as { id: string }[]).map((b) => b.id);
-  // find a book with a long description via its page
-  for (const id of ids) {
-    await page.goto(`/book/${id}`).catch(() => {}); // the canonical slug redirect can interrupt the first navigation
-    await page.waitForLoadState("load");
-    const toggle = page.getByRole("button", { name: "Read more" });
-    if (await toggle.count()) {
-      await toggle.click();
-      await expect(page.getByRole("button", { name: "Show less" })).toBeVisible();
-      return;
-    }
+test("long descriptions are clamped with a Read more toggle", async ({ page }) => {
+  // 10035 (Lamuthu Amaya) has a ~770 character description after the WooCommerce import
+  await page.goto("/book/10035").catch(() => {}); // the canonical slug redirect can interrupt the first navigation
+  await page.waitForLoadState("load");
+  const text = page.locator("p.line-clamp-4");
+  await expect(text).toBeVisible();
+  const toggle = page.getByRole("button", { name: "Read more" });
+  await expect(toggle).toBeVisible();
+  const clampedHeight = (await text.boundingBox())!.height;
+  await toggle.click();
+  await expect(page.getByRole("button", { name: "Show less" })).toBeVisible();
+  expect((await page.locator("p.whitespace-pre-line").first().boundingBox())!.height).toBeGreaterThan(clampedHeight);
+  await page.getByRole("button", { name: "Show less" }).click();
+  await expect(page.getByRole("button", { name: "Read more" })).toBeVisible();
+});
+
+test("Rasakatha titles lead the Novel and Translations lists", async ({ request }) => {
+  type B = { title: string; inStock: boolean; isOwnTitle: boolean };
+  for (const category of ["Novel", "Translations"]) {
+    const items = ((await (await request.get(`/api/books?category=${category}&limit=10`)).json()).items) as B[];
+    const ownFirst = items.findIndex((b) => !b.isOwnTitle);
+    expect(items[0].isOwnTitle, `${category}: first book is a Rasakatha title`).toBe(true);
+    // once the own titles end, no own title appears later
+    expect(items.slice(ownFirst === -1 ? items.length : ownFirst).some((b) => b.isOwnTitle)).toBe(false);
+    expect(items.every((b) => b.inStock)).toBe(true);
   }
-  test.skip(true, "no long description in the first 60 books yet (import not applied)");
 });
