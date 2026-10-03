@@ -5,7 +5,8 @@ import { trackBeginCheckout } from "@/lib/analytics";
 import type { CartItem } from "@/lib/cart";
 import { money, tintForId } from "@/lib/format";
 import { calculateShippingFee } from "@/lib/shipping";
-import LocationCombobox from "./LocationCombobox";
+import { lineSavings, regularSubtotal, totalSavings } from "@/lib/savings";
+import LocationCombobox, { type Place } from "./LocationCombobox";
 import type { Customer } from "@/lib/orders";
 import type { Account } from "@/lib/account";
 import BookCover from "./BookCover";
@@ -41,7 +42,7 @@ const DEFAULT_ITEM_WEIGHT = 303;
 
 const ADDRESS_KEY = "rasakatha:last-address";
 
-type SavedAddress = { name?: string; phone?: string; email?: string; city?: string; address?: string };
+type SavedAddress = { name?: string; phone?: string; email?: string; city?: string; district?: string; custom?: boolean; address?: string };
 
 function readSavedAddress(): SavedAddress {
   try {
@@ -70,12 +71,14 @@ export default function CheckoutPage({
   const [email, setEmail] = useState(account?.email || saved.email || "");
   const [phone, setPhone] = useState(account?.phone || saved.phone || "");
   const [address, setAddress] = useState(saved.address ?? "");
-  const [city, setCity] = useState(saved.city ?? "");
+  const [place, setPlace] = useState<Place>({ town: saved.city ?? "", district: saved.district ?? "", custom: !!saved.custom });
+  const city = place.town;
   const [isGift, setIsGift] = useState(false);
   const [giftName, setGiftName] = useState("");
   const [giftPhone, setGiftPhone] = useState("");
   const [giftAddress, setGiftAddress] = useState("");
-  const [giftCity, setGiftCity] = useState("");
+  const [giftPlace, setGiftPlace] = useState<Place>({ town: "", district: "", custom: false });
+  const giftCity = giftPlace.town;
   const [payment, setPayment] = useState("cod");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [placing, setPlacing] = useState(false);
@@ -83,12 +86,15 @@ export default function CheckoutPage({
 
   const subtotal = items.reduce((sum, x) => sum + (x.price ?? 0) * x.qty, 0);
   const totalWeight = items.reduce((sum, x) => sum + (x.weight ?? DEFAULT_ITEM_WEIGHT) * x.qty, 0);
-  const deliveryCity = isGift ? giftCity : city;
+  const deliveryPlace = isGift ? giftPlace : place;
+  const deliveryCity = deliveryPlace.town.trim();
   const deliveryFee = useMemo(
-    () => (deliveryCity && subtotal > 0 ? calculateShippingFee(deliveryCity, totalWeight) : 0),
-    [deliveryCity, totalWeight, subtotal]
+    () => (deliveryCity && subtotal > 0 ? calculateShippingFee(deliveryCity, totalWeight, { townNotInList: deliveryPlace.custom }) : 0),
+    [deliveryCity, deliveryPlace.custom, totalWeight, subtotal]
   );
   const total = subtotal + deliveryFee;
+  const savings = totalSavings(items);
+  const originalSubtotal = regularSubtotal(items);
 
   const handlePlaceOrder = () => {
     const nextErrors: Record<string, string> = {};
@@ -97,14 +103,14 @@ export default function CheckoutPage({
     else if (!/^\S+@\S+\.\S+$/.test(email)) nextErrors.email = "Enter a valid email address";
     if (!phone.trim()) nextErrors.phone = "Enter a contact number";
     else if (phone.replace(/\D/g, "").length < 9) nextErrors.phone = "Enter a valid phone number (e.g. 077 123 4567)";
-    if (!city) nextErrors.city = "Select your city";
+    if (!city.trim() || (place.custom && !place.district)) nextErrors.city = place.custom ? "Choose your district and type your town" : "Select your city";
     if (!address.trim()) nextErrors.address = "Enter your address";
     if (isGift) {
       if (!giftName.trim()) nextErrors.giftName = "Enter recipient's name";
       if (!giftPhone.trim()) nextErrors.giftPhone = "Enter recipient's phone number";
       else if (giftPhone.replace(/\D/g, "").length < 9) nextErrors.giftPhone = "Enter a valid phone number";
       if (!giftAddress.trim()) nextErrors.giftAddress = "Enter recipient's delivery address";
-      if (!giftCity) nextErrors.giftCity = "Select recipient's city";
+      if (!giftCity.trim() || (giftPlace.custom && !giftPlace.district)) nextErrors.giftCity = giftPlace.custom ? "Choose the district and type the town" : "Select recipient's city";
     }
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
@@ -113,15 +119,26 @@ export default function CheckoutPage({
       name,
       phone,
       email,
-      city,
+      city: city.trim(),
       address,
+      ...(place.district ? { district: place.district } : {}),
+      ...(place.custom ? { townNotInList: true } : {}),
       isGift,
-      ...(isGift ? { giftName, giftPhone, giftCity, giftAddress } : {}),
+      ...(isGift
+        ? {
+            giftName,
+            giftPhone,
+            giftCity: giftCity.trim(),
+            giftAddress,
+            ...(giftPlace.district ? { giftDistrict: giftPlace.district } : {}),
+            ...(giftPlace.custom ? { giftTownNotInList: true } : {}),
+          }
+        : {}),
     };
 
     if (account) {
       try {
-        localStorage.setItem(ADDRESS_KEY, JSON.stringify({ name, phone, email, city, address }));
+        localStorage.setItem(ADDRESS_KEY, JSON.stringify({ name, phone, email, city, district: place.district, custom: place.custom, address }));
       } catch {
         // storage unavailable (private mode): prefill just won't happen next time
       }
@@ -170,8 +187,8 @@ export default function CheckoutPage({
 
       <h1 className="font-display mb-6 text-xl font-bold text-[var(--ink)]">Checkout</h1>
 
-      <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
-        <div className="flex flex-col gap-6">
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_clamp(300px,28vw,360px)]">
+        <div className="flex min-w-0 flex-col gap-6">
           <div>
             <h4 className="mb-3 flex items-center gap-2 text-[15px] font-bold text-[var(--ink)]">
               <IconTruck className="h-4 w-4 text-accent" />
@@ -220,7 +237,7 @@ export default function CheckoutPage({
           <div>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="sm:col-span-2">
-                <LocationCombobox value={city} onChange={setCity} hasError={!!errors.city} />
+                <LocationCombobox value={place} onChange={setPlace} hasError={!!errors.city} />
                 {errors.city && <p className="mt-1 text-[11.5px] text-accent">{errors.city}</p>}
               </div>
               <div className="sm:col-span-2">
@@ -284,7 +301,7 @@ export default function CheckoutPage({
                   {errors.giftPhone && <p className="mt-1 text-[11.5px] text-accent">{errors.giftPhone}</p>}
                 </div>
                 <div className="sm:col-span-2">
-                  <LocationCombobox value={giftCity} onChange={setGiftCity} hasError={!!errors.giftCity} label="Recipient's city or town" />
+                  <LocationCombobox value={giftPlace} onChange={setGiftPlace} hasError={!!errors.giftCity} label="Recipient's city or town" />
                   {errors.giftCity && <p className="mt-1 text-[11.5px] text-accent">{errors.giftCity}</p>}
                 </div>
                 <div className="sm:col-span-2">
@@ -361,7 +378,7 @@ export default function CheckoutPage({
           </div>
         </div>
 
-        <div className="sticky top-4 h-fit rounded-2xl border border-[var(--border)] bg-card p-5">
+        <div className="sticky top-4 h-fit min-w-0 rounded-2xl border border-[var(--border)] bg-card p-5">
           <h4 className="mb-4 text-[15px] font-bold text-[var(--ink)]">Order Summary</h4>
           <div className="scrollbar-none mb-4 flex max-h-[240px] flex-col gap-3 overflow-y-auto">
             {items.map((item) => (
@@ -373,20 +390,34 @@ export default function CheckoutPage({
                   className="h-[56px] w-[40px] shrink-0 rounded-lg"
                 />
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-[12.5px] font-semibold text-[var(--ink)]">{item.title}</div>
+                  <div className="line-clamp-2 break-words text-[12.5px] font-semibold text-[var(--ink)]">{item.title}</div>
                   <div className="text-[11px] text-[var(--ink-faint)]">Qty {item.qty}</div>
                 </div>
-                <span className="shrink-0 text-[12.5px] font-bold text-[var(--ink)]">
+                <span className="flex shrink-0 flex-col items-end text-[12.5px] font-bold text-[var(--ink)]">
                   {item.price != null ? money(item.price * item.qty) : "—"}
+                  {lineSavings(item) > 0 && (
+                    <span className="text-[11px] font-normal text-[var(--ink-faint)] line-through">
+                      {money((item.regularPrice ?? 0) * item.qty)}
+                    </span>
+                  )}
                 </span>
               </div>
             ))}
           </div>
           <div className="h-px bg-[var(--border)]" />
-          <div className="mt-4 flex items-center justify-between text-[13.5px] text-[var(--ink-dim)]">
+          <div className="mt-4 flex items-center justify-between gap-3 text-[13.5px] text-[var(--ink-dim)]">
             <span>Subtotal</span>
-            <span className="text-[var(--ink)]">{money(subtotal)}</span>
+            <span className="flex items-baseline gap-2 text-[var(--ink)]">
+              {savings > 0 && <span className="text-[12px] text-[var(--ink-faint)] line-through">{money(originalSubtotal)}</span>}
+              {money(subtotal)}
+            </span>
           </div>
+          {savings > 0 && (
+            <div className="mt-2 flex items-center justify-between text-[13.5px] font-semibold text-[var(--success-text)]">
+              <span>You save</span>
+              <span>{money(savings)}</span>
+            </div>
+          )}
           <div className="mt-2 flex items-center justify-between text-[13.5px] text-[var(--ink-dim)]">
             <span>Delivery {deliveryCity ? `(${deliveryCity})` : ""}</span>
             <span className="text-[var(--ink)]">

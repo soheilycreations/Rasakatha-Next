@@ -19,6 +19,15 @@ const STATUS_COLORS: Record<OrderStatus, string> = {
   delivered: "#2f5a3a",
 };
 
+// The customer typed their own town (not in the Sri Lanka Post list): check it before dispatch.
+function TownFlag() {
+  return (
+    <span className="mt-1 inline-block rounded-full bg-amber-500/15 px-2 py-0.5 text-[10.5px] font-bold uppercase text-amber-600">
+      Town not in list: confirm address
+    </span>
+  );
+}
+
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<StoredOrder[]>([]);
   const [loading, setLoading] = useState(true);
@@ -200,14 +209,18 @@ export default function AdminOrdersPage() {
                                   <div>{o.customer.giftPhone}</div>
                                   <div>
                                     {o.customer.giftAddress}, {o.customer.giftCity}
+                                    {o.customer.giftDistrict ? `, ${o.customer.giftDistrict}` : ""}
                                   </div>
+                                  {o.customer.giftTownNotInList && <TownFlag />}
                                 </>
                               ) : (
                                 <>
                                   <div className="text-[var(--ink)]">{o.customer.email}</div>
                                   <div>
                                     {o.customer.address}, {o.customer.city}
+                                    {o.customer.district ? `, ${o.customer.district}` : ""}
                                   </div>
+                                  {o.customer.townNotInList && <TownFlag />}
                                 </>
                               )}
                             </div>

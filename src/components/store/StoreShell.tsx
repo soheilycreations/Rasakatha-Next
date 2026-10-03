@@ -185,6 +185,7 @@ function StorefrontShell({ children, trending }: { children: React.ReactNode; tr
           author: book.author,
           cover: book.cover,
           price: book.onSale && book.salePrice ? book.salePrice : book.regularPrice,
+          regularPrice: book.regularPrice,
           weight: book.weight,
         });
       },

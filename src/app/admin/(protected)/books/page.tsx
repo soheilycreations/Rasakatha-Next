@@ -282,6 +282,8 @@ export default function AdminBooksPage() {
   const [page, setPage] = useState(1);
   const [pageCount, setPageCount] = useState(1);
   const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<"" | "missing_description" | "missing_publisher">("");
+  const [counts, setCounts] = useState({ missingDescription: 0, missingPublisher: 0 });
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Partial<CatalogBook> | null>(null);
   const [deleting, setDeleting] = useState<CatalogBook | null>(null);
@@ -303,13 +305,14 @@ export default function AdminBooksPage() {
   }, []);
 
   const load = () => {
-    const params = new URLSearchParams({ page: String(page), limit: "20", search });
+    const params = new URLSearchParams({ page: String(page), limit: "20", search, ...(filter ? { filter } : {}) });
     fetch(`/api/admin/books?${params}`)
       .then((r) => r.json())
       .then((data) => {
         setItems(data.items);
         setTotal(data.total);
         setPageCount(data.pageCount);
+        if (data.counts) setCounts(data.counts);
         setLoading(false);
       });
   };
@@ -317,7 +320,7 @@ export default function AdminBooksPage() {
   useEffect(() => {
     queueMicrotask(() => setLoading(true));
     load();
-  }, [page, search]);
+  }, [page, search, filter]);
 
   useEffect(() => {
     if (!toast) return;
@@ -358,6 +361,32 @@ export default function AdminBooksPage() {
         placeholder="Search by title, author, or ID…"
         className="w-full max-w-sm rounded-xl border border-[var(--border)] bg-[var(--surface-tint)] px-3.5 py-2.5 text-[13.5px] text-[var(--ink)] placeholder:text-[var(--ink-faint)] focus:outline-none focus:border-accent/50"
       />
+
+      <div className="-mt-3 flex flex-wrap items-center gap-2" role="group" aria-label="Filter books">
+        {(
+          [
+            ["", "All books", null],
+            ["missing_description", "Missing description", counts.missingDescription],
+            ["missing_publisher", "Missing publisher", counts.missingPublisher],
+          ] as const
+        ).map(([value, label, count]) => (
+          <button
+            key={value || "all"}
+            onClick={() => {
+              setPage(1);
+              setFilter(value);
+            }}
+            aria-pressed={filter === value}
+            className={`rounded-full px-4 py-1.5 text-[12.5px] font-semibold ${
+              filter === value ? "bg-accent text-white" : "bg-[var(--surface-tint)] text-[var(--ink-dim)] hover:text-[var(--ink)]"
+            }`}
+          >
+            {label}
+            {count !== null && <span className="ml-1.5 opacity-80">({count.toLocaleString()})</span>}
+          </button>
+        ))}
+        {filter && <span className="text-[12px] text-[var(--ink-faint)]">Rasakatha titles first, then newest.</span>}
+      </div>
 
       {loading ? (
         <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-card">

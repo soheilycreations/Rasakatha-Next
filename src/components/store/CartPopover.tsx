@@ -1,5 +1,6 @@
 import type { CartItem } from "@/lib/cart";
 import { money, tintForId } from "@/lib/format";
+import { totalSavings } from "@/lib/savings";
 import BookCover from "./BookCover";
 import { IconCart } from "./icons";
 
@@ -19,6 +20,7 @@ export default function CartPopover({
   onCheckout: () => void;
 }) {
   const subtotal = items.reduce((sum, x) => sum + (x.price ?? 0) * x.qty, 0);
+  const savings = totalSavings(items);
 
   return (
     <div
@@ -126,6 +128,7 @@ export default function CartPopover({
             <span className="text-[12.5px] font-medium text-[var(--ink-dim)]">Subtotal</span>
             <span className="text-[17px] font-extrabold text-[var(--ink)]">{money(subtotal)}</span>
           </div>
+          {savings > 0 && <div className="-mt-2 mb-3 text-[12px] font-semibold text-[var(--success-text)]">You save {money(savings)}</div>}
           <button
             onClick={() => {
               onCheckout();

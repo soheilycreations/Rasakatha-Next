@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { trackPurchase } from "@/lib/analytics";
 import type { StoredOrder } from "@/lib/orders";
 import { money, tintForId } from "@/lib/format";
+import { totalSavings } from "@/lib/savings";
 import BookCover from "./BookCover";
 import OrderStatusTracker from "./OrderStatusTracker";
 import { IconHeart } from "./icons";
@@ -80,6 +81,12 @@ export default function ThankYouPage({
           ))}
         </div>
 
+        {totalSavings(order.items) > 0 && (
+          <div className="mb-2.5 flex items-center justify-between text-[13.5px] font-semibold text-[var(--success-text)]">
+            <span>You saved</span>
+            <span>{money(totalSavings(order.items))}</span>
+          </div>
+        )}
         <div className="flex items-center justify-between border-t border-[var(--border)] pt-3.5">
           <span className="text-[14px] font-semibold text-[var(--ink)]">Total Paid</span>
           <span className="text-[18px] font-extrabold text-[var(--ink)]">{money(order.total)}</span>

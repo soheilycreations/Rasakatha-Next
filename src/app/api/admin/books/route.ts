@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/server/supabase";
-import { bookToRow, invalidateCatalog, rowToBook, withoutOptionalColumns, type BookLanguage, type CatalogBook } from "@/lib/catalog";
+import { newestFirst } from "@/lib/bookOrder";
+import { bookToRow, getCatalog, invalidateCatalog, paginate, rowToBook, withoutOptionalColumns, type BookLanguage, type CatalogBook } from "@/lib/catalog";
 
 // Rasakatha's own imprint, whatever way it was typed.
 const OWN_PUBLISHER = /rasa\s*katha/i;
@@ -28,12 +29,33 @@ function cleanDetails(b: Partial<CatalogBook>) {
 
 type Row = Parameters<typeof rowToBook>[0];
 
+const missingDescription = (b: CatalogBook) => !b.blurb?.trim();
+const missingPublisher = (b: CatalogBook) => !b.publisher?.trim();
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const search = (searchParams.get("search") || "").trim();
   const page = Math.max(1, Number(searchParams.get("page") || "1") || 1);
   const limit = Math.min(100, Number(searchParams.get("limit") || "25")) || 25;
   const from = (page - 1) * limit;
+  const filter = searchParams.get("filter");
+
+  // "Missing description" / "Missing publisher" lists: Rasakatha titles first, then newest first.
+  const catalog = await getCatalog();
+  const counts = {
+    missingDescription: catalog.filter(missingDescription).length,
+    missingPublisher: catalog.filter(missingPublisher).length,
+  };
+  if (filter === "missing_description" || filter === "missing_publisher") {
+    const test = filter === "missing_description" ? missingDescription : missingPublisher;
+    const q = search.toLowerCase();
+    const list = catalog
+      .filter(test)
+      .filter((b) => !q || b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q) || b.id === q)
+      .sort((a, b) => Number(b.isOwnTitle) - Number(a.isOwnTitle) || newestFirst(a, b));
+    const p = paginate(list, page, limit);
+    return NextResponse.json({ items: p.items, total: p.total, page: p.page, pageCount: p.pageCount, counts });
+  }
 
   let query = supabase().from("books").select("*", { count: "exact" });
   if (search) {
@@ -53,6 +75,7 @@ export async function GET(request: Request) {
     total,
     page,
     pageCount: Math.max(1, Math.ceil(total / limit)),
+    counts,
   });
 }
 

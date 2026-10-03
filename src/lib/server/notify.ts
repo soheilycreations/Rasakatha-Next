@@ -1,6 +1,7 @@
 import { SITE } from "@/lib/site";
 import { money } from "@/lib/format";
 import { ORDER_STATUS_STEPS, type StoredOrder } from "@/lib/orders";
+import { totalSavings } from "@/lib/savings";
 
 // Order notifications. Every channel is optional and silently skipped when its
 // env vars are missing, and failures are logged, never thrown: a broken mail
@@ -60,6 +61,7 @@ function itemsTable(order: StoredOrder): string {
     )
     .join("");
   return `<table style="width:100%;border-collapse:collapse;font-size:14px">${rows}
+    ${totalSavings(order.items) > 0 ? `<tr><td style="padding:6px 0;color:#047857"><b>You saved</b></td><td style="text-align:right;color:#047857"><b>${money(totalSavings(order.items))}</b></td></tr>` : ""}
     <tr><td style="padding:6px 0;color:#666">Delivery</td><td style="text-align:right;color:#666">${money(order.deliveryFee)}</td></tr>
     <tr><td style="padding:8px 0;border-top:1px solid #ddd"><b>Total</b></td><td style="padding:8px 0;border-top:1px solid #ddd;text-align:right"><b>${money(order.total)}</b></td></tr></table>`;
 }
@@ -92,7 +94,10 @@ export async function notifyOrderPlaced(order: StoredOrder): Promise<void> {
   await Promise.all([
     sendEmail(order.customer.email, `Order #${order.id} confirmed — Rasakatha.lk`, customerHtml),
     sendEmail(storeTo, `New order #${order.id} (${money(order.total)})`, storeHtml),
-    sendSms(order.customer.phone, `Rasakatha.lk: we received your order #${order.id} (${money(order.total)}). Track: ${SITE.url}/track-order`),
+    sendSms(
+      order.customer.phone,
+      `Rasakatha.lk: we received your order #${order.id} (${money(order.total)})${totalSavings(order.items) > 0 ? `, you saved ${money(totalSavings(order.items))}` : ""}. Track: ${SITE.url}/track-order`
+    ),
   ]);
 }
 
