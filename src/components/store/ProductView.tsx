@@ -98,6 +98,7 @@ export default function ProductView({
               alt={`${book.title} by ${book.author} — book cover`}
               className="aspect-[2/3] rounded-2xl border border-[var(--border)] shadow-[0_28px_60px_-24px_rgba(0,0,0,0.5)]"
               imgClassName="rounded-2xl"
+              priority
             />
             {!book.inStock && (
               <span className="absolute left-3 top-3 rounded-full bg-black/60 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-white/80">

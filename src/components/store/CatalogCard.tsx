@@ -14,8 +14,10 @@ export default function CatalogCard({
   onToggleWish,
   onAdd,
   onOpen,
+  priority = false,
 }: {
   book: CatalogBook;
+  priority?: boolean;
   wished: boolean;
   onToggleWish: (id: string) => void;
   onAdd: (book: CatalogBook) => void;
@@ -45,6 +47,7 @@ export default function CatalogCard({
           caption="book cover"
           className="aspect-[2/3] rounded-xl"
           imgClassName="rounded-xl"
+          priority={priority}
         >
           <button
             onClick={(e) => {

@@ -47,8 +47,10 @@ export default function HomeRow({
 
   if (!loading && items.length === 0) return null;
 
+  // content-visibility: rows below the fold skip layout/paint until scrolled near (less main-thread work)
+
   return (
-    <section className="group/row relative mb-10">
+    <section className="group/row relative mb-10 [contain-intrinsic-size:auto_440px] [content-visibility:auto]">
       <div className="mb-3.5 flex items-center gap-4 px-4 sm:px-8">
         <h2 className="font-display text-lg font-bold text-[var(--ink)] sm:text-xl">{title}</h2>
         <div className="flex-1" />

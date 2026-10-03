@@ -42,9 +42,10 @@ export default function CatalogGrid({
 
   return (
     <div className="grid grid-cols-[repeat(auto-fill,minmax(196px,1fr))] gap-[22px]">
-      {items.map((book) => (
+      {items.map((book, i) => (
         <CatalogCard
           key={book.id}
+          priority={i < 4}
           book={book}
           wished={!!wish[book.id]}
           onToggleWish={onToggleWish}

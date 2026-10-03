@@ -8,6 +8,7 @@ export default function BookCover({
   caption,
   className = "",
   imgClassName = "",
+  priority = false,
   children,
 }: {
   cover?: string;
@@ -16,6 +17,8 @@ export default function BookCover({
   caption?: string;
   className?: string;
   imgClassName?: string;
+  // set for the likely LCP image so it's preloaded instead of lazy-loaded
+  priority?: boolean;
   children?: React.ReactNode;
 }) {
   if (cover) {
@@ -25,6 +28,7 @@ export default function BookCover({
           src={cover}
           alt={alt}
           fill
+          priority={priority}
           sizes="(max-width: 640px) 45vw, 200px"
           className={`object-cover ${imgClassName}`}
           // Optimised covers (.webp, <=900px: scripts/optimize-covers.ts and the admin upload) go
